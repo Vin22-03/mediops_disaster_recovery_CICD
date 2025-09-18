@@ -3,65 +3,46 @@ pipeline {
 
     environment {
         AWS_REGION   = "us-east-1"
-        TF_DIR       = "terraform"   // adjust if your .tf files are in root
+        TF_DIR       = "terraform"
         KUBECONFIG   = "${env.WORKSPACE}/kubeconfig"
     }
 
     stages {
-        stage('Terraform Init') {
+        stage('Terraform Init & Plan') {
             steps {
-                sh """
-                cd $TF_DIR
-                terraform init -input=false
-                """
-            }
-        }
-
-        stage('Terraform Validate') {
-            steps {
-                sh """
-                cd $TF_DIR
-                terraform validate
-                """
-            }
-        }
-
-        stage('Terraform Plan') {
-            steps {
-                sh """
-                cd $TF_DIR
-                terraform plan -input=false -out=tfplan
-                """
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
+                    sh """
+                    cd $TF_DIR
+                    terraform init -input=false
+                    terraform validate
+                    terraform plan -input=false -out=tfplan
+                    """
+                }
             }
         }
 
         stage('Terraform Apply') {
             steps {
                 input message: "Approve infra changes?", ok: "Apply"
-                sh """
-                cd $TF_DIR
-                terraform apply -input=false -auto-approve tfplan
-                """
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
+                    sh """
+                    cd $TF_DIR
+                    terraform apply -input=false -auto-approve tfplan
+                    """
+                }
             }
         }
 
         stage('Export kubeconfig') {
             steps {
-                sh """
-                aws eks update-kubeconfig \
-                  --name mediops-eks \
-                  --region $AWS_REGION \
-                  --kubeconfig $KUBECONFIG
-                """
-            }
-        }
-
-        stage('Verify Infra') {
-            steps {
-                sh """
-                kubectl get nodes || true
-                terraform output || true
-                """
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
+                    sh """
+                    aws eks update-kubeconfig \
+                      --name mediops-eks \
+                      --region $AWS_REGION \
+                      --kubeconfig $KUBECONFIG
+                    """
+                }
             }
         }
     }
