@@ -4,7 +4,7 @@ pipeline {
     environment {
         APP_NAME   = "mediops-app"
         IMAGE_TAG  = "latest"
-        ECR_URL    = "123456789012.dkr.ecr.us-east-1.amazonaws.com"   // change to your AWS ECR repo
+        ECR_URL    = "921483785411.dkr.ecr.us-east-1.amazonaws.com/mediops
         AWS_REGION = "us-east-1"
     }
 
