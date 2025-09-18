@@ -32,7 +32,7 @@ pipeline {
                     withCredentials([string(credentialsId: 'sonarqubemediops', variable: 'SONAR_TOKEN')]) {
                         sh '''
                             echo "🔍 Running SonarQube analysis"
-                            ${tool 'SonarScanner'}/bin/sonar-scanner \
+                               sonar-scanner \
                               -Dsonar.projectKey=mediops \
                               -Dsonar.sources=. \
                               -Dsonar.host.url=$SONAR_HOST_URL \
