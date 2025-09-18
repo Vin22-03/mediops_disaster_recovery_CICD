@@ -29,15 +29,16 @@ pipeline {
         stage('Code Quality - SonarQube') {
             steps {
                 withSonarQubeEnv('SonarQube') {
-			 withCredentials([string(credentialsId: 'sonarqubemediops', variable: 'SONAR_TOKEN')]) {
-                    sh '''
-                        echo "🔍 Running SonarQube analysis"
-                        sonar-scanner \
-                          -Dsonar.projectKey=mediops \
-                          -Dsonar.sources=. \
-                          -Dsonar.host.url=$SONAR_HOST_URL \
-                          -Dsonar.login=$SONAR_AUTH_TOKEN || true
-                    '''
+                    withCredentials([string(credentialsId: 'sonarqubemediops', variable: 'SONAR_TOKEN')]) {
+                        sh '''
+                            echo "🔍 Running SonarQube analysis"
+                            sonar-scanner \
+                              -Dsonar.projectKey=mediops \
+                              -Dsonar.sources=. \
+                              -Dsonar.host.url=$SONAR_HOST_URL \
+                              -Dsonar.login=$SONAR_TOKEN || true
+                        '''
+                    }
                 }
             }
         }
@@ -84,8 +85,5 @@ pipeline {
         failure {
             echo "❌ Pipeline failed!"
         }
-     }
-  }
-
+    }
 }
-
