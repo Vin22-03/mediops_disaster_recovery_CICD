@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block content %}
+<header class="w-full border-b bg-white">
+<div class="max-w-7xl mx-auto flex items-center justify-between p-4">
+<div class="flex items-center gap-3">
+<img src="/static/images/logo.png" class="h-20 w-auto" alt="MediOps"/>
+<span class="font-bold text-xl">MediOps -by VinCloudOps</span>
+</div>
+<p class="text-sm text-slate-500 hidden md:block">Zero Downtime. Zero Data Loss. 100% Care.</p>
+</div>
+</header>
+
+
+<section class="max-w-7xl mx-auto grid md:grid-cols-2 gap-10 items-center px-4 py-10">
+<div>
+<h1 class="text-4xl md:text-5xl font-extrabold leading-tight">Your Health, Powered by <span class="text-blue-600">Cloud</span> & <span class="text-blue-600">DevOps</span></h1>
+<p class="mt-4 text-slate-600">Secure records, zero-downtime updates, and disaster‑ready design.</p>
+<a href="/dashboard" class="inline-block mt-6 px-6 py-3 rounded-xl bg-blue-600 text-white font-semibold shadow hover:bg-blue-700">Get Started</a>
+</div>
+<div class="hidden md:block">
+<img src="https://images.unsplash.com/photo-1584515933487-779824d29309?q=80&w=1200&auto=format&fit=crop" alt="Doctor" class="rounded-2xl shadow" />
+</div>
+</section>
+
+
+<section class="max-w-7xl mx-auto px-4 pb-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+<div class="bg-white rounded-2xl p-6 shadow border">
+<div class="text-3xl">🔐</div>
+<h3 class="mt-3 font-semibold">Secure Records</h3>
+<p class="text-sm text-slate-500">HIPAA‑like practices with encryption.</p>
+</div>
+<div class="bg-white rounded-2xl p-6 shadow border">
+<div class="text-3xl">🌍</div>
+<h3 class="mt-3 font-semibold">24/7 Availability</h3>
+<p class="text-sm text-slate-500">Multi‑AZ design + failover.</p>
+</div>
+<div class="bg-white rounded-2xl p-6 shadow border">
+<div class="text-3xl">🌀</div>
+<h3 class="mt-3 font-semibold">Zero Downtime</h3>
+<p class="text-sm text-slate-500">Blue‑Green deployments.</p>
+</div>
+<div class="bg-white rounded-2xl p-6 shadow border">
+<div class="text-3xl">☁️</div>
+<h3 class="mt-3 font-semibold">Cloud + DevOps Power</h3>
+<p class="text-sm text-slate-500">AWS + IaC + CI/CD.</p>
+</div>
+</section>
+
+
+<footer class="border-t bg-white">
+<div class="max-w-7xl mx-auto p-6 text-center text-slate-500 italic">MediOps by VinCloudOps</div>
+</footer>
+{% endblock %}

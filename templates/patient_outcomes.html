@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="min-h-screen flex">
+  <!-- Sidebar -->
+  <aside class="w-64 bg-slate-900 text-slate-100 hidden md:flex flex-col">
+    <div class="px-5 py-4 border-b border-slate-800 flex items-center gap-2">
+      <span class="font-semibold">MediOps</span>
+    </div>
+    <nav class="p-4 space-y-2 text-slate-300">
+      <a class="block px-3 py-2 rounded-lg hover:bg-slate-800" href="/dashboard">Dashboard</a>
+      <a class="block px-3 py-2 rounded-lg bg-slate-800 text-white" href="/patient-outcomes">Patient Outcomes</a>
+    </nav>
+  </aside>
+
+  <!-- Main -->
+  <main class="flex-1 p-6">
+    <h1 class="text-2xl font-bold mb-6">Patient Outcomes</h1>
+
+    <!-- KPI Cards -->
+    <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <!-- Avg Length of Stay -->
+      <div class="bg-white rounded-xl p-5 shadow border">
+        <p class="text-slate-500">Average Length of Stay</p>
+        <p class="text-3xl font-bold text-blue-600">{{ kpi.avg_stay.value }}</p>
+        <p class="text-sm">
+          <span class="{% if kpi.avg_stay.change < 0 %}text-red-600{% else %}text-green-600{% endif %}">
+            {{ kpi.avg_stay.change }}%
+          </span>
+          vs {{ kpi.avg_stay.prev }}
+        </p>
+      </div>
+
+      <!-- Readmission Rate -->
+      <div class="bg-white rounded-xl p-5 shadow border">
+        <p class="text-slate-500">Readmission Rate</p>
+        <p class="text-3xl font-bold text-red-600">{{ kpi.readmission.value }}</p>
+        <p class="text-sm">
+          <span class="{% if kpi.readmission.change < 0 %}text-red-600{% else %}text-green-600{% endif %}">
+            {{ kpi.readmission.change }}%
+          </span>
+          vs {{ kpi.readmission.prev }}
+        </p>
+      </div>
+
+      <!-- Satisfaction -->
+      <div class="bg-white rounded-xl p-5 shadow border">
+        <p class="text-slate-500">Patient Satisfaction</p>
+        <p class="text-3xl font-bold text-green-600">{{ kpi.satisfaction.value }}</p>
+        <p class="text-sm">
+          <span class="{% if kpi.satisfaction.change < 0 %}text-red-600{% else %}text-green-600{% endif %}">
+            {{ kpi.satisfaction.change }}%
+          </span>
+          vs {{ kpi.satisfaction.prev }}
+        </p>
+      </div>
+
+      <!-- Mortality -->
+      <div class="bg-white rounded-xl p-5 shadow border">
+        <p class="text-slate-500">Mortality Rate</p>
+        <p class="text-3xl font-bold text-purple-600">{{ kpi.mortality.value }}</p>
+        <p class="text-sm">
+          <span class="{% if kpi.mortality.change < 0 %}text-red-600{% else %}text-green-600{% endif %}">
+            {{ kpi.mortality.change }}%
+          </span>
+          vs {{ kpi.mortality.prev }}
+        </p>
+      </div>
+    </section>
+
+    <!-- Charts -->
+    <section class="mt-8 grid gap-6 lg:grid-cols-3">
+      <!-- Admission Overview -->
+      <div class="bg-white rounded-xl p-5 shadow border lg:col-span-1">
+        <h3 class="font-semibold">Admission Overview</h3>
+        <canvas id="admissionChart" class="mt-4"></canvas>
+      </div>
+
+      <!-- Readmission -->
+      <div class="bg-white rounded-xl p-5 shadow border lg:col-span-1">
+        <h3 class="font-semibold">Readmission</h3>
+        <canvas id="readmissionChart" class="mt-4"></canvas>
+      </div>
+
+      <!-- Causes of Readmission -->
+      <div class="bg-white rounded-xl p-5 shadow border lg:col-span-1">
+        <h3 class="font-semibold">Causes of Readmission</h3>
+        <canvas id="causesChart" class="mt-4"></canvas>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+  // Admission Overview (bar + line)
+  new Chart(document.getElementById('admissionChart'), {
+    data: {
+      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'],
+      datasets: [
+        { type: 'bar', label: 'Total Admissions', data: [150,160,170,165,155,145,160,150,158], backgroundColor: '#3b82f6' },
+        { type: 'line', label: 'Avg Stay (days)', data: [12,13,12.5,13,12,11.5,12,12.5,12], borderColor: '#6366f1' }
+      ]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+  });
+
+  // Readmission (stacked bar)
+  new Chart(document.getElementById('readmissionChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Self-payer', 'Medicare', 'Private', 'Medicaid'],
+      datasets: [
+        { label: 'Within 7 days', data: [278,400,367,262], backgroundColor: '#a78bfa' },
+        { label: 'After 7 days', data: [1114,1811,1526,1117], backgroundColor: '#60a5fa' }
+      ]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom' } }, scales: { x: { stacked: true }, y: { stacked: true } } }
+  });
+
+  // Causes of Readmission
+  new Chart(document.getElementById('causesChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Infections','Non-compliance','No follow-up','Atrial Fib.','Falls','Blood Sugar','Respiratory','GI Bleed','Other'],
+      datasets: [{ label: 'Count', data: [132,122,66,61,30,20,19,15,14], backgroundColor: '#34d399' }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } } }
+  });
+</script>
+{% endblock %}

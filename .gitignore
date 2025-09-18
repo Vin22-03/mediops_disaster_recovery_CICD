@@ -1,0 +1,66 @@
+# -------------------------------
+# Python
+# -------------------------------
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+*.sqlite3
+db.sqlite3
+*.egg-info/
+*.egg
+*.cover
+htmlcov/
+.coverage
+dist/
+build/
+.env
+.venv/
+*.env
+*.log
+.envrc
+
+# -------------------------------
+# Flask specific
+# -------------------------------
+instance/
+*.db
+
+# -------------------------------
+# Terraform
+# -------------------------------
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# -------------------------------
+# Docker
+# -------------------------------
+*.pid
+*.seed
+*.pid.lock
+
+# -------------------------------
+# VSCode / IDEs
+# -------------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*.bak
+
+# -------------------------------
+# OS Specific
+# -------------------------------
+.DS_Store
+Thumbs.db
+.venv/
+.terraform/
+*.tfstate
