@@ -21,7 +21,7 @@ pipeline {
                     echo "📦 Installing Python dependencies"
                     pip install --no-cache-dir -r requirements.txt || true
                     echo "🧪 Running unit tests"
-                    pytest || echo "⚠️ No tests found, skipping..."
+                    PYTHONPATH=. pytest || echo "⚠️ No tests found, skipping..."
                 '''
             }
         }
