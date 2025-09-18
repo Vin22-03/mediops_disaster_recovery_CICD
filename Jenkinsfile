@@ -19,7 +19,7 @@ pipeline {
             steps {
                 sh '''
                     echo "📦 Installing Python dependencies"
-                    pip install --no-cache-dir -r requirements.txt || true
+                    pip install --no-cache-dir -r requirements.txt || pip install flask pytest
                     echo "🧪 Running unit tests"
                     PYTHONPATH=. pytest || echo "⚠️ No tests found, skipping..."
                 '''
