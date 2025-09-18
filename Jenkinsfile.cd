@@ -1,0 +1,143 @@
+pipeline {
+    agent any
+
+    parameters {
+        string(name: 'VERSION_TAG', defaultValue: 'v1.0-blue', description: 'Docker image version to deploy')
+        choice(name: 'DEPLOY_COLOR', choices: ['blue', 'green'], description: 'Choose which version to deploy')
+        booleanParam(name: 'APPLY_SERVICES', defaultValue: false, description: 'Apply Service YAMLs (first deploy only)')
+    }
+
+    environment {
+        CLUSTER_NAME = "mediops-eks"
+        AWS_REGION   = "us-east-1"
+        ECR_URL      = "921483785411.dkr.ecr.us-east-1.amazonaws.com"
+        APP_NAME     = "mediops-app"
+        KUBECONFIG   = "${env.WORKSPACE}/kubeconfig"
+        SNS_TOPIC_ARN = "arn:aws:sns:us-east-1:921483785411:mediops-alerts" // update if Terraform outputs different ARN
+    }
+
+    stages {
+
+        stage('Configure kubeconfig') {
+            steps {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
+                    sh '''
+                        echo "⚙️ Setting up kubeconfig"
+                        aws eks update-kubeconfig \
+                          --name $CLUSTER_NAME \
+                          --region $AWS_REGION \
+                          --kubeconfig $KUBECONFIG
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy App') {
+            steps {
+                script {
+                    def deployColor = params.DEPLOY_COLOR.toLowerCase()
+                    def image = "${ECR_URL}/${APP_NAME}:${params.VERSION_TAG}"
+
+                    echo "🚀 Deploying ${image} to ${deployColor} environment"
+
+                    // Update Deployment image or apply new manifest
+                    sh """
+                    kubectl --kubeconfig=$KUBECONFIG set image deployment/${APP_NAME}-${deployColor} ${APP_NAME}=${image} --record || \
+                    kubectl --kubeconfig=$KUBECONFIG apply -f k8s/${deployColor}-deployment.yaml
+                    """
+
+                    // Apply Service if first time
+                    if (params.APPLY_SERVICES) {
+                        sh "kubectl --kubeconfig=$KUBECONFIG apply -f k8s/${deployColor}-service.yaml"
+                    }
+
+                    // Patch ingress to new color
+                    sh """
+                    kubectl --kubeconfig=$KUBECONFIG patch ingress mediops-ingress -n mediops \
+                      --type='json' \
+                      -p='[{"op":"replace","path":"/spec/rules/0/http/paths/0/backend/service/name","value":"mediops-${deployColor}-svc"}]'
+                    """
+                }
+            }
+        }
+
+        stage('Verify & Rollback if Needed') {
+            steps {
+                script {
+                    def deployColor = params.DEPLOY_COLOR.toLowerCase()
+                    def stableColor = (deployColor == "blue") ? "green" : "blue"
+
+                    echo "🔍 Verifying rollout for ${deployColor}..."
+                    def rolloutStatus = sh(
+                        script: "kubectl --kubeconfig=$KUBECONFIG rollout status deployment/${APP_NAME}-${deployColor} --timeout=60s || echo FAIL",
+                        returnStdout: true
+                    ).trim()
+
+                    if (rolloutStatus.contains("FAIL")) {
+                        echo "❌ Rollout failed for ${deployColor}! Rolling back to ${stableColor}..."
+
+                        // Patch ingress back to stable service
+                        sh """
+                        kubectl --kubeconfig=$KUBECONFIG patch ingress mediops-ingress -n mediops \
+                          --type='json' \
+                          -p='[{"op":"replace","path":"/spec/rules/0/http/paths/0/backend/service/name","value":"mediops-${stableColor}-svc"}]'
+                        """
+
+                        // Slack notification (requires Slack plugin)
+                        slackSend (
+                            channel: '#mediops-alerts',
+                            color: '#FF0000',
+                            message: "🚨 Rollback triggered! ${deployColor} failed, switched back to ${stableColor}. Build: ${env.BUILD_URL}"
+                        )
+
+                        // Email notification (requires Email Extension plugin)
+                        emailext (
+                            subject: "🚨 MediOps Rollback Triggered – ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                            body: """
+                            Hi Vinay,
+
+                            Rollback triggered for MediOps deployment.
+
+                            ❌ Failed color: ${deployColor}
+                            ✅ Stable color restored: ${stableColor}
+                            🔗 Build logs: ${env.BUILD_URL}
+                            """,
+                            to: "vinay.venvin@gmail.com"
+                        )
+
+                        // SNS publish (requires Terraform SNS topic + Jenkins AWS creds)
+                        sh """
+                        aws sns publish \
+                          --topic-arn $SNS_TOPIC_ARN \
+                          --region $AWS_REGION \
+                          --message "🚨 MediOps Rollback triggered! Failed ${deployColor}, rolled back to ${stableColor}. Build: ${env.BUILD_URL}"
+                        """
+
+                        error("🚨 Rollout failed — rolled back traffic to ${stableColor}")
+                    } else {
+                        echo "✅ Rollout successful for ${deployColor}!"
+                    }
+                }
+            }
+        }
+
+        stage('Post-Deployment Status') {
+            steps {
+                sh """
+                kubectl --kubeconfig=$KUBECONFIG get pods -n mediops -o wide
+                kubectl --kubeconfig=$KUBECONFIG get svc -n mediops
+                kubectl --kubeconfig=$KUBECONFIG get ingress mediops-ingress -n mediops -o wide
+                """
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ CD pipeline completed successfully!"
+        }
+        failure {
+            echo "❌ CD pipeline failed. Check rollback logs."
+        }
+    }
+}
