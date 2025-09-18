@@ -28,7 +28,7 @@ pipeline {
 
         stage('Code Quality - SonarQube') {
             steps {
-                withSonarQubeEnv('SonarQube') {
+                withSonarQubeEnv('SonarLocal') {
                     withCredentials([string(credentialsId: 'sonarqubemediops', variable: 'SONAR_TOKEN')]) {
                         sh '''
                             echo "🔍 Running SonarQube analysis"
