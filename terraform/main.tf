@@ -60,30 +60,31 @@ resource "aws_vpc" "this" {
   tags = merge(local.tags, { Name = "${local.name}-vpc" })
 }
 
-resource "aws_internet_gateway" "igw" {
-  vpc_id = aws_vpc.this.id
-  tags   = merge(local.tags, { Name = "${local.name}-igw" })
-}
-
+# Public Subnets
 resource "aws_subnet" "public" {
-  for_each = toset(range(0, length(var.public_cidrs)))
+  for_each = toset(var.public_cidrs)
+
   vpc_id                  = aws_vpc.this.id
-  cidr_block              = var.public_cidrs[each.value]
-  availability_zone       = var.azs[each.value]
+  cidr_block              = each.value
+  availability_zone       = element(var.azs, index(var.public_cidrs, each.value))
   map_public_ip_on_launch = true
+
   tags = merge(local.tags, {
-    Name                     = "${local.name}-public-${each.value}"
+    Name                     = "${local.name}-public-${index(var.public_cidrs, each.value)}"
     "kubernetes.io/role/elb" = "1"
   })
 }
 
+# Private Subnets
 resource "aws_subnet" "private" {
-  for_each = toset(range(0, length(var.private_cidrs)))
+  for_each = toset(var.private_cidrs)
+
   vpc_id            = aws_vpc.this.id
-  cidr_block        = var.private_cidrs[each.value]
-  availability_zone = var.azs[each.value]
+  cidr_block        = each.value
+  availability_zone = element(var.azs, index(var.private_cidrs, each.value))
+
   tags = merge(local.tags, {
-    Name                              = "${local.name}-private-${each.value}"
+    Name                              = "${local.name}-private-${index(var.private_cidrs, each.value)}"
     "kubernetes.io/role/internal-elb" = "1"
   })
 }
