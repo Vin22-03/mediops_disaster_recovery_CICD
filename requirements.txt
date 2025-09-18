@@ -3,3 +3,5 @@ Jinja2==3.1.4       # templating (Flask uses this under the hood)
 Werkzeug==3.0.2     # WSGI utility (Flask dependency)
 itsdangerous==2.2.0 # secure session/cookie handling
 click==8.1.7        # CLI support for Flask
+flask
+pytest
