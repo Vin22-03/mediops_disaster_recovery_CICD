@@ -203,6 +203,22 @@ resource "aws_eks_node_group" "default" {
 }
 
 ########################
+# EKS OIDC Provider for IRSA
+########################
+data "aws_eks_cluster" "eks" {
+  name = aws_eks_cluster.this.name
+}
+
+data "aws_eks_cluster_auth" "eks" {
+  name = aws_eks_cluster.this.name
+}
+
+data "aws_iam_openid_connect_provider" "oidc" {
+  url = aws_eks_cluster.this.identity[0].oidc[0].issuer
+}
+
+
+########################
 # ALB Controller
 ########################
 resource "aws_iam_role" "alb_sa_role" {
