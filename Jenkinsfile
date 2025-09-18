@@ -4,7 +4,7 @@ pipeline {
     environment {
         APP_NAME   = "mediops-app"
         IMAGE_TAG  = "latest"
-        ECR_URL    = "921483785411.dkr.ecr.us-east-1.amazonaws.com/mediops-app"
+        ECR_URL    = "921483785411.dkr.ecr.us-east-1.amazonaws.com"
         AWS_REGION = "us-east-1"
     }
 
