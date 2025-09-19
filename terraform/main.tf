@@ -20,13 +20,13 @@ terraform {
     }
   }
 
-  backend "s3" {
-    bucket         = "mediops-tfstate-bucket"
-    key            = "eks/main.tfstate"
-    region         = "us-east-1"
-    dynamodb_table = "mediops-tf-locks"
-    encrypt        = true
-  }
+#  backend "s3" {
+ #   bucket         = "mediops-tfstate-bucket"
+  #  key            = "eks/main.tfstate"
+   # region         = "us-east-1"
+    #dynamodb_table = "mediops-tf-locks"
+    #encrypt        = true
+  #}
 }
 
 ########################
@@ -76,7 +76,8 @@ resource "aws_dynamodb_table" "tf_locks" {
   name         = "mediops-tf-locks"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "LockID"
-  attribute { name = "LockID" type = "S" }
+  attribute { name = "LockID"
+  type = "S" }
   tags = local.tags
 }
 
