@@ -10,9 +10,7 @@ pipeline {
 
     stages {
         stage('Checkout') {
-            steps {
-                checkout scm
-            }
+            steps { checkout scm }
         }
 
         stage('Install Dependencies & Run Unit Tests') {
@@ -31,8 +29,7 @@ pipeline {
                 withSonarQubeEnv('SonarLocal') {
                     withCredentials([string(credentialsId: 'sonarqubemediops', variable: 'SONAR_TOKEN')]) {
                         sh '''
-                            echo "🔍 Running SonarQube analysis"
-                               sonar-scanner \
+                            sonar-scanner \
                               -Dsonar.projectKey=mediops \
                               -Dsonar.sources=. \
                               -Dsonar.host.url=$SONAR_HOST_URL \
@@ -46,9 +43,7 @@ pipeline {
         stage('Security Scan - SBOM & Trivy') {
             steps {
                 sh '''
-                    echo "📦 Generating SBOM with Syft"
                     syft . -o json > sbom.json || true
-                    echo "🔒 Scanning Dockerfile & project with Trivy"
                     trivy fs . || true
                 '''
             }
@@ -57,58 +52,41 @@ pipeline {
         stage('Docker Build & Tag') {
             steps {
                 sh '''
-                    echo "🐳 Building Docker image"
                     docker build -t $APP_NAME:$IMAGE_TAG .
-                    # Tag with version (build number) and latest
                     docker tag $APP_NAME:$IMAGE_TAG $ECR_URL/$APP_NAME:$IMAGE_TAG
                     docker tag $APP_NAME:$IMAGE_TAG $ECR_URL/$APP_NAME:latest
-
                 '''
             }
         }
 
-stage('Push to ECR') {
-    steps {
-        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
-            sh '''
-                echo "🔑 Logging in to ECR"
-                aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_URL
-
-                echo "🚀 Tagging images"
-                # Tag version (build number or chosen IMAGE_TAG) and latest
-                docker tag $APP_NAME:$IMAGE_TAG $ECR_URL/$APP_NAME:$IMAGE_TAG
-                docker tag $APP_NAME:$IMAGE_TAG $ECR_URL/$APP_NAME:latest
-
-                echo "📤 Pushing images to ECR"
-                docker push $ECR_URL/$APP_NAME:$IMAGE_TAG
-                docker push $ECR_URL/$APP_NAME:latest
-            '''
-        }
-    }
-  }
-}
-   stage('Trigger CD Pipeline') {
+        stage('Push to ECR') {
             steps {
-                script {
-                    echo "📢 Triggering CD pipeline with version ${IMAGE_TAG}"
-                    build job: 'MediOps-CD',  // ✅ your CD job name
-                          parameters: [
-                              string(name: 'DEPLOY_COLOR', value: 'blue'),   // default deploy color
-                              booleanParam(name: 'APPLY_SERVICES', value: false)
-                          ],
-                          propagate: true,
-                          wait: true
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
+                    sh '''
+                        aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_URL
+                        docker push $ECR_URL/$APP_NAME:$IMAGE_TAG
+                        docker push $ECR_URL/$APP_NAME:latest
+                    '''
                 }
+            }
+        }
+
+        // ✅ Put Trigger CD Pipeline HERE, inside stages
+        stage('Trigger CD Pipeline') {
+            steps {
+                build job: 'MediOps-CD',
+                      parameters: [
+                          string(name: 'VERSION_TAG', value: env.BUILD_NUMBER),
+                          string(name: 'DEPLOY_COLOR', value: 'blue'),
+                          booleanParam(name: 'APPLY_SERVICES', value: true)
+                      ],
+                      wait: false
             }
         }
     }
 
- post {
-        success {
-            echo "✅ CI pipeline completed & CD triggered"
-        }
-        failure {
-            echo "❌ CI pipeline failed"
-        }
+    post {
+        always { echo "✅ CI pipeline finished" }
+        failure { echo "❌ CI pipeline failed!" }
     }
-
+}
