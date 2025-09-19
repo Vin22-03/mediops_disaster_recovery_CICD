@@ -87,13 +87,28 @@ stage('Push to ECR') {
     }
   }
 }
+   stage('Trigger CD Pipeline') {
+            steps {
+                script {
+                    echo "📢 Triggering CD pipeline with version ${IMAGE_TAG}"
+                    build job: 'MediOps-CD',  // ✅ your CD job name
+                          parameters: [
+                              string(name: 'DEPLOY_COLOR', value: 'blue'),   // default deploy color
+                              booleanParam(name: 'APPLY_SERVICES', value: false)
+                          ],
+                          propagate: true,
+                          wait: true
+                }
+            }
+        }
+    }
 
-    post {
-        always {
-            echo "✅ Pipeline finished (check individual stage results)"
+ post {
+        success {
+            echo "✅ CI pipeline completed & CD triggered"
         }
         failure {
-            echo "❌ Pipeline failed!"
+            echo "❌ CI pipeline failed"
         }
     }
 }
