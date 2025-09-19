@@ -3,14 +3,21 @@
 # Author: VinCloudOps | Date: 19 Sept 2025
 # Region: us-east-1 | One NAT | With DR-S3 + EKS + ALB
 ############################################################
-
 terraform {
-  required_version = ">= 1.6.0"
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.60"
-    }
+required_version = ">= 1.6.0"
+required_providers {
+aws = {
+source = "hashicorp/aws"
+version = "~> 5.60"
+}
+kubernetes = {
+source = "hashicorp/kubernetes"
+version = "~> 2.31"
+}
+helm = {
+source = "hashicorp/helm"
+version = "~> 2.13"
+}
 }
 }
 ########################
@@ -27,7 +34,7 @@ variable "node_type"      { default = "t3.medium" }
 variable "desired_size"   { default = 2 }
 variable "min_size"       { default = 1 }
 variable "max_size"       { default = 3 }
-variable "kubeconfig_path" { default = "/var/jenkins_home/workspace/MediOps-Infra_main/kubeconfig" }
+
 
 locals {
   name = "${var.project}-eks"
@@ -42,17 +49,30 @@ locals {
 provider "aws" {
   region = var.region
 }
-# ✅ Fix: Tell Terraform where kubeconfig is
-provider "kubernetes" {
-  config_path = var.kubeconfig_path
+data "aws_eks_cluster" "main" {
+name = aws_eks_cluster.main.name
 }
+
+
+data "aws_eks_cluster_auth" "main" {
+name = aws_eks_cluster.main.name
+}
+
+
+provider "kubernetes" {
+host = data.aws_eks_cluster.main.endpoint
+cluster_ca_certificate = base64decode(data.aws_eks_cluster.main.certificate_authority[0].data)
+token = data.aws_eks_cluster_auth.main.token
+}
+
 
 provider "helm" {
-  kubernetes {
-    config_path = var.kubeconfig_path
-  }
+kubernetes {
+host = data.aws_eks_cluster.main.endpoint
+cluster_ca_certificate = base64decode(data.aws_eks_cluster.main.certificate_authority[0].data)
+token = data.aws_eks_cluster_auth.main.token
 }
-
+}
 ########################
 # 🌐 VPC + Subnets + NAT + Routing
 ########################
