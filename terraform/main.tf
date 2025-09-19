@@ -3,39 +3,43 @@
 # Author: VinCloudOps | Date: 19 Sept 2025
 # Region: us-east-1 | One NAT | With DR-S3 + EKS + ALB
 ############################################################
+
 terraform {
-required_version = ">= 1.6.0"
-required_providers {
-aws = {
-source = "hashicorp/aws"
-version = "~> 5.60"
+  required_version = ">= 1.6.0"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.60"
+    }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.31"
+    }
+    helm = {
+      source  = "hashicorp/helm"
+      version = "~> 2.13"
+    }
+  }
 }
-kubernetes = {
-source = "hashicorp/kubernetes"
-version = "~> 2.31"
-}
-helm = {
-source = "hashicorp/helm"
-version = "~> 2.13"
-}
-}
-}
+
 ########################
 # 🔧 Input Variables
 ########################
-variable "project"        { default = "mediops" }
-variable "region"         { default = "us-east-1" }
-variable "vpc_cidr"       { default = "10.0.0.0/16" }
-variable "azs"            { default = ["us-east-1a", "us-east-1b"] }
-variable "public_subnets" { default = ["10.0.0.0/24", "10.0.1.0/24"] }
+variable "project"         { default = "mediops" }
+variable "region"          { default = "us-east-1" }
+variable "vpc_cidr"        { default = "10.0.0.0/16" }
+variable "azs"             { default = ["us-east-1a", "us-east-1b"] }
+variable "public_subnets"  { default = ["10.0.0.0/24", "10.0.1.0/24"] }
 variable "private_subnets" { default = ["10.0.10.0/24", "10.0.11.0/24"] }
-variable "eks_version"    { default = "1.30" }
-variable "node_type"      { default = "t3.medium" }
-variable "desired_size"   { default = 2 }
-variable "min_size"       { default = 1 }
-variable "max_size"       { default = 3 }
+variable "eks_version"     { default = "1.30" }
+variable "node_type"       { default = "t3.medium" }
+variable "desired_size"    { default = 2 }
+variable "min_size"        { default = 1 }
+variable "max_size"        { default = 3 }
 
-
+########################
+# 💡 Locals & Tags
+########################
 locals {
   name = "${var.project}-eks"
   tags = {
@@ -46,33 +50,32 @@ locals {
   }
 }
 
+########################
+# 🌍 Providers
+########################
 provider "aws" {
   region = var.region
 }
-data "aws_eks_cluster" "main" {
-name = aws_eks_cluster.main.name
-}
 
-
+# Auth token for Kubernetes provider (used after EKS is created)
 data "aws_eks_cluster_auth" "main" {
-name = aws_eks_cluster.main.name
+  name = aws_eks_cluster.main.name
 }
-
 
 provider "kubernetes" {
-host = data.aws_eks_cluster.main.endpoint
-cluster_ca_certificate = base64decode(data.aws_eks_cluster.main.certificate_authority[0].data)
-token = data.aws_eks_cluster_auth.main.token
+  host                   = aws_eks_cluster.main.endpoint
+  cluster_ca_certificate = base64decode(aws_eks_cluster.main.certificate_authority[0].data)
+  token                  = data.aws_eks_cluster_auth.main.token
 }
-
 
 provider "helm" {
-kubernetes {
-host = data.aws_eks_cluster.main.endpoint
-cluster_ca_certificate = base64decode(data.aws_eks_cluster.main.certificate_authority[0].data)
-token = data.aws_eks_cluster_auth.main.token
+  kubernetes {
+    host                   = aws_eks_cluster.main.endpoint
+    cluster_ca_certificate = base64decode(aws_eks_cluster.main.certificate_authority[0].data)
+    token                  = data.aws_eks_cluster_auth.main.token
+  }
 }
-}
+
 ########################
 # 🌐 VPC + Subnets + NAT + Routing
 ########################
