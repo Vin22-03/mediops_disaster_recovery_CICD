@@ -3,7 +3,6 @@ pipeline {
 
     parameters {
         // Default version comes from CI build number
-        string(name: 'VERSION_TAG', defaultValue: "${BUILD_NUMBER}", description: 'Docker image version to deploy')
         choice(name: 'DEPLOY_COLOR', choices: ['blue', 'green'], description: 'Choose which version to deploy')
         booleanParam(name: 'APPLY_SERVICES', defaultValue: false, description: 'Apply base Service/Ingress YAMLs (first deploy only)')
     }
