@@ -3,7 +3,6 @@
 # Author: VinCloudOps | Date: 19 Sept 2025
 # Region: us-east-1 | One NAT | With DR-S3 + EKS + ALB
 ############################################################
-
 terraform {
   required_version = ">= 1.6.0"
   required_providers {
@@ -279,15 +278,6 @@ resource "aws_iam_policy" "alb_controller_policy" {
 resource "aws_iam_role_policy_attachment" "alb_policy" {
   role       = aws_iam_role.alb_sa_role.name
   policy_arn = aws_iam_policy.alb_controller_policy.arn
-}
-provider "kubernetes" {
-  host                   = aws_eks_cluster.main.endpoint
-  cluster_ca_certificate = base64decode(aws_eks_cluster.main.certificate_authority[0].data)
-  token                  = data.aws_eks_cluster_auth.cluster.token
-}
-
-data "aws_eks_cluster_auth" "cluster" {
-  name = aws_eks_cluster.main.name
 }
 
 resource "helm_release" "alb_controller" {
