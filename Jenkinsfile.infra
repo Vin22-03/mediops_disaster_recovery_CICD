@@ -2,23 +2,26 @@ pipeline {
     agent any
 
     environment {
-        AWS_REGION = "us-east-1"
-        TF_DIR     = "terraform"
+        AWS_REGION   = "us-east-1"
+        TF_DIR       = "terraform"
+        KUBECONFIG   = "${env.WORKSPACE}/kubeconfig"
     }
 
     stages {
-        stage('Terraform Init') {
+        stage('Terraform Init & Plan') {
             steps {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
                     sh """
                     cd $TF_DIR
                     terraform init -input=false
                     terraform validate
+                    terraform plan -input=false -out=tfplan
                     """
                 }
             }
         }
 
+        /*
         stage('Terraform Destroy') {
             steps {
                 input message: "Are you sure you want to destroy all infra?", ok: "Destroy"
@@ -30,14 +33,40 @@ pipeline {
                 }
             }
         }
+        */
+
+        stage('Terraform Apply') {
+            steps {
+                input message: "Approve infra changes?", ok: "Apply"
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
+                    sh """
+                    cd $TF_DIR
+                    terraform apply -input=false -auto-approve tfplan
+                    """
+                }
+            }
+        }
+
+        stage('Export kubeconfig') {
+            steps {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
+                    sh """
+                    aws eks update-kubeconfig \
+                      --name mediops-eks \
+                      --region $AWS_REGION \
+                      --kubeconfig $KUBECONFIG
+                    """
+                }
+            }
+        }
     }
 
     post {
         success {
-            echo "✅ Terraform infrastructure destroyed successfully!"
+            echo "✅ Terraform infrastructure applied successfully!"
         }
         failure {
-            echo "❌ Terraform destroy failed!"
+            echo "❌ Terraform apply failed!"
         }
     }
 }
