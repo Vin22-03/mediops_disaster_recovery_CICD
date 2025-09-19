@@ -21,6 +21,35 @@ pipeline {
             }
         }
 
+        stage('Configure kubeconfig') {
+            steps {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
+                    sh """
+                    echo "🔧 Setting up kubeconfig for EKS cluster"
+                    aws eks update-kubeconfig \
+                      --region $AWS_REGION \
+                      --name mediops-eks \
+                      --kubeconfig $KUBECONFIG
+
+                    export KUBECONFIG=$KUBECONFIG
+                    """
+                }
+            }
+        }
+
+        stage('Terraform Apply') {
+            steps {
+                input message: "Approve infra changes?", ok: "Apply"
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
+                    sh """
+                    cd $TF_DIR
+                    export KUBECONFIG=$KUBECONFIG
+                    terraform apply -input=false -auto-approve tfplan
+                    """
+                }
+            }
+        }
+
         /*
         stage('Terraform Destroy') {
             steps {
@@ -34,31 +63,6 @@ pipeline {
             }
         }
         */
-
-        stage('Terraform Apply') {
-            steps {
-                input message: "Approve infra changes?", ok: "Apply"
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
-                    sh """
-                    cd $TF_DIR
-                    terraform apply -input=false -auto-approve tfplan
-                    """
-                }
-            }
-        }
-
-        stage('Export kubeconfig') {
-            steps {
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
-                    sh """
-                    aws eks update-kubeconfig \
-                      --name mediops-eks \
-                      --region $AWS_REGION \
-                      --kubeconfig $KUBECONFIG
-                    """
-                }
-            }
-        }
     }
 
     post {
