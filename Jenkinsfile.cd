@@ -49,7 +49,7 @@ pipeline {
 
                         # Apply deployment if missing, then update image
                         kubectl --kubeconfig=$KUBECONFIG apply -f k8s/${DEPLOY_COLOR}-deployment.yaml -n $K8S_NAMESPACE
-                        kubectl --kubeconfig=$KUBECONFIG -n $K8S_NAMESPACE set image deployment/mediops-${DEPLOY_COLOR} mediops-app=$ECR_URL/$APP_NAME:$VERSION_TAG
+                        kubectl --kubeconfig=$KUBECONFIG -n $K8S_NAMESPACE set image deployment/mediops-app-${DEPLOY_COLOR} mediops-app=$ECR_URL/$APP_NAME:$VERSION_TAG
                         '''
                     }
                 }
