@@ -50,6 +50,15 @@ provider "aws" {
   region = var.region
 }
 
+# Internet Gateway
+resource "aws_internet_gateway" "igw" {
+  vpc_id = aws_vpc.this.id
+
+  tags = merge(local.tags, {
+    Name = "${local.name}-igw"
+  })
+}
+
 ########################
 # Networking (VPC + Subnets + NAT)
 ########################
