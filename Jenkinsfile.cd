@@ -55,15 +55,17 @@ pipeline {
             }
         }
 
-        stage('Apply Base Services & Ingress') {
-            when { expression { params.APPLY_SERVICES } }
-            steps {
-                sh """
-                kubectl --kubeconfig=$KUBECONFIG apply -f k8s/service.yaml -n $K8S_NAMESPACE
-                kubectl --kubeconfig=$KUBECONFIG apply -f k8s/ingress.yaml -n $K8S_NAMESPACE
-                """
-            }
+stage('Apply Base Services & Ingress') {
+    when { expression { params.APPLY_SERVICES } }
+    steps {
+        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
+            sh """
+            kubectl --kubeconfig=$KUBECONFIG apply -f k8s/service.yaml -n $K8S_NAMESPACE
+            kubectl --kubeconfig=$KUBECONFIG apply -f k8s/ingress.yaml -n $K8S_NAMESPACE
+            """
         }
+    }
+}
 
         stage('Switch Traffic (Service selector)') {
             steps {
