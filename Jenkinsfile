@@ -111,4 +111,4 @@ stage('Push to ECR') {
             echo "❌ CI pipeline failed"
         }
     }
-}
+
