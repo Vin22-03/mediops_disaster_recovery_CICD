@@ -1,31 +1,37 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mediops-app-green
+  name: mediops-green
   namespace: mediops
   labels:
-    app: mediops-app
-    color: green
+    app: mediops
+    track: green
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
-      app: mediops-app
-      color: green
+      app: mediops
+      track: green
   template:
     metadata:
       labels:
-        app: mediops-app
-        color: green
+        app: mediops
+        track: green
     spec:
       containers:
-      - name: mediops-app
-        image: 921483785411.dkr.ecr.us-east-1.amazonaws.com/mediops-app:v1.0-green
-        ports:
-        - containerPort: 5000
-        readinessProbe:
-          httpGet:
-            path: /
-            port: 5000
-          initialDelaySeconds: 5
-          periodSeconds: 10
+        - name: mediops-container
+          image: 921483785411.dkr.ecr.us-east-1.amazonaws.com/mediops-app:v1.0
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet: { path: /health, port: 8080 }
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /health, port: 8080 }
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          resources:
+            requests: { cpu: "100m", memory: "128Mi" }
+            limits:   { cpu: "500m", memory: "512Mi" }

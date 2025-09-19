@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mediops-svc
+  namespace: mediops
+  labels:
+    app: mediops
+spec:
+  type: ClusterIP
+  selector:
+    app: mediops
+    track: blue   # default live version (will switch to green later)
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
