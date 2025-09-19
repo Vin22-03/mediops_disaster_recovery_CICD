@@ -1,0 +1,28 @@
+pipeline {
+  agent any
+
+  
+    stages {
+    stage('Terraform Destroy') {
+      steps {
+        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
+          
+            sh """
+              terraform init
+              terraform destroy -auto-approve
+            """
+          }
+        }
+      }
+    }
+  }
+
+  post {
+    success {
+      echo "✅ Infra destroyed successfully!"
+    }
+    failure {
+      echo "❌ Terraform destroy failed!"
+    }
+  }
+}
