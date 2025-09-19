@@ -15,6 +15,7 @@ pipeline {
         KUBECONFIG     = "${env.WORKSPACE}/kubeconfig"
         SNS_TOPIC_ARN  = "arn:aws:sns:us-east-1:921483785411:mediops-alerts"
         K8S_NAMESPACE  = "mediops"
+        VERSION_TAG = "${env.BUILD_NUMBER}"
     }
 
     stages {
