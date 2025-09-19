@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         APP_NAME   = "mediops-app"
-        IMAGE_TAG  = "latest"
+        IMAGE_TAG  = "${BUILD_NUMBER}"
         ECR_URL    = "921483785411.dkr.ecr.us-east-1.amazonaws.com"
         AWS_REGION = "us-east-1"
     }
@@ -59,24 +59,34 @@ pipeline {
                 sh '''
                     echo "🐳 Building Docker image"
                     docker build -t $APP_NAME:$IMAGE_TAG .
+                    # Tag with version (build number) and latest
+                    docker tag $APP_NAME:$IMAGE_TAG $ECR_URL/$APP_NAME:$IMAGE_TAG
+                    docker tag $APP_NAME:$IMAGE_TAG $ECR_URL/$APP_NAME:latest
+
                 '''
             }
         }
 
-        stage('Push to ECR') {
-            steps {
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
-                    sh '''
-                        echo "🔑 Logging in to ECR"
-                        aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_URL
-                        echo "🚀 Tagging and pushing image"
-                        docker tag $APP_NAME:$IMAGE_TAG $ECR_URL/$APP_NAME:$IMAGE_TAG
-                        docker push $ECR_URL/$APP_NAME:$IMAGE_TAG
-                    '''
-                }
-            }
+stage('Push to ECR') {
+    steps {
+        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
+            sh '''
+                echo "🔑 Logging in to ECR"
+                aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_URL
+
+                echo "🚀 Tagging images"
+                # Tag version (build number or chosen IMAGE_TAG) and latest
+                docker tag $APP_NAME:$IMAGE_TAG $ECR_URL/$APP_NAME:$IMAGE_TAG
+                docker tag $APP_NAME:$IMAGE_TAG $ECR_URL/$APP_NAME:latest
+
+                echo "📤 Pushing images to ECR"
+                docker push $ECR_URL/$APP_NAME:$IMAGE_TAG
+                docker push $ECR_URL/$APP_NAME:latest
+            '''
         }
     }
+  }
+}
 
     post {
         always {
