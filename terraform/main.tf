@@ -36,6 +36,7 @@ variable "node_type"      { default = "t3.medium" }
 variable "desired_size"   { default = 2 }
 variable "min_size"       { default = 1 }
 variable "max_size"       { default = 3 }
+variable "kubeconfig_path" { default = "/var/jenkins_home/workspace/MediOps-Infra_main/kubeconfig" }
 
 locals {
   name = "${var.project}-eks"
@@ -49,6 +50,16 @@ locals {
 
 provider "aws" {
   region = var.region
+}
+# ✅ Fix: Tell Terraform where kubeconfig is
+provider "kubernetes" {
+  config_path = var.kubeconfig_path
+}
+
+provider "helm" {
+  kubernetes {
+    config_path = var.kubeconfig_path
+  }
 }
 
 ########################
