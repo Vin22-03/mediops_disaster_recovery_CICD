@@ -1,0 +1,28 @@
+pipeline {
+    agent any
+    environment {
+        TF_DIR = "terraform"
+        AWS_REGION = "us-east-1"
+    }
+    stages {
+        stage('Terraform Destroy') {
+            steps {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
+                    sh """
+                    cd $TF_DIR
+                    terraform init -input=false
+                    terraform destroy -auto-approve
+                    """
+                }
+            }
+        }
+    }
+    post {
+        success {
+            echo "✅ Infra destroyed cleanly!"
+        }
+        failure {
+            echo "❌ Destroy failed. Check permissions or state backend."
+        }
+    }
+}
