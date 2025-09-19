@@ -121,6 +121,7 @@ pipeline {
 
         stage('Post-Deployment Status') {
             steps {
+              withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
                 sh """
                 kubectl --kubeconfig=$KUBECONFIG get pods -n $K8S_NAMESPACE -o wide
                 kubectl --kubeconfig=$KUBECONFIG get svc -n $K8S_NAMESPACE
@@ -129,6 +130,7 @@ pipeline {
             }
         }
     }
+}
 
     post {
         success { echo "✅ CD pipeline completed successfully!" }
