@@ -20,13 +20,13 @@ terraform {
     }
   }
 
-  backend "s3" {
-    bucket         = "mediops-tfstate-bucket"
-    key            = "eks/main.tfstate"
-    region         = "us-east-1"
-    dynamodb_table = "mediops-tf-locks"
-    encrypt        = true
-  }
+#  backend "s3" {
+#    bucket         = "mediops-tfstate-bucket"
+#    key            = "eks/main.tfstate"
+#    region         = "us-east-1"
+#     dynamodb_table = "mediops-tf-locks"
+#    encrypt        = true
+#  }
 }
 
 ########################
