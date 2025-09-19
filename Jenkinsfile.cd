@@ -41,7 +41,11 @@ pipeline {
                         def image = "${ECR_URL}/${APP_NAME}:${params.VERSION_TAG}"
 
                         echo "🚀 Deploying ${image} to ${deployColor} deployment"
-
+                     
+                        sh """
+                        # Ensure namespace exists
+                        kubectl --kubeconfig=$KUBECONFIG apply -f k8s/namespace.yaml
+ 
                         sh """
                         kubectl --kubeconfig=$KUBECONFIG apply -f k8s/${deployColor}-deployment.yaml -n $K8S_NAMESPACE
                         kubectl --kubeconfig=$KUBECONFIG -n $K8S_NAMESPACE set image deployment/${APP_NAME}-${deployColor} ${APP_NAME}=${image} --record
