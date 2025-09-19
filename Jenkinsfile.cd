@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     parameters {
-         string(name: 'VERSION_TAG', defaultValue: 'latest', description: 'Docker image version to deploy')
+        string(name: 'VERSION_TAG', defaultValue: 'latest', description: 'Docker image version to deploy')
         choice(name: 'DEPLOY_COLOR', choices: ['blue', 'green'], description: 'Choose which version to deploy')
         booleanParam(name: 'APPLY_SERVICES', defaultValue: false, description: 'Apply base Service/Ingress YAMLs (first deploy only)')
     }
@@ -15,7 +15,6 @@ pipeline {
         KUBECONFIG     = "${env.WORKSPACE}/kubeconfig"
         SNS_TOPIC_ARN  = "arn:aws:sns:us-east-1:921483785411:mediops-alerts"
         K8S_NAMESPACE  = "mediops"
-        
     }
 
     stages {
@@ -39,7 +38,7 @@ pipeline {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
                     script {
                         def deployColor = params.DEPLOY_COLOR.toLowerCase()
-                        def image = "${ECR_URL}/${APP_NAME}:${VERSION_TAG}"
+                        def image = "${ECR_URL}/${APP_NAME}:${params.VERSION_TAG}"
 
                         echo "🚀 Deploying ${image} to ${deployColor} deployment"
 
@@ -48,77 +47,77 @@ pipeline {
                         kubectl --kubeconfig=$KUBECONFIG apply -f k8s/namespace.yaml
 
                         # Apply deployment if missing, then update image
-                        kubectl --kubeconfig=$KUBECONFIG apply -f k8s/${DEPLOY_COLOR}-deployment.yaml -n $K8S_NAMESPACE
-                        kubectl --kubeconfig=$KUBECONFIG -n $K8S_NAMESPACE set image deployment/mediops-app-${DEPLOY_COLOR} mediops-app=$ECR_URL/$APP_NAME:$VERSION_TAG
+                        kubectl --kubeconfig=$KUBECONFIG apply -f k8s/${deployColor}-deployment.yaml -n $K8S_NAMESPACE
+                        kubectl --kubeconfig=$KUBECONFIG -n $K8S_NAMESPACE set image deployment/mediops-app-${deployColor} mediops-app=$ECR_URL/$APP_NAME:${params.VERSION_TAG}
                         """
                     }
                 }
             }
         }
 
-stage('Apply Base Services & Ingress') {
-    when { expression { params.APPLY_SERVICES } }
-    steps {
-        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
-            sh """
-            kubectl --kubeconfig=$KUBECONFIG apply -f k8s/service.yaml -n $K8S_NAMESPACE
-            kubectl --kubeconfig=$KUBECONFIG apply -f k8s/ingress.yaml -n $K8S_NAMESPACE
-            """
-        }
-    }
-}
-
-        stage('Switch Traffic (Service selector)') {
+        stage('Apply Base Services & Ingress') {
+            when { expression { params.APPLY_SERVICES } }
             steps {
-		withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
-                script {
-                    def deployColor = params.DEPLOY_COLOR.toLowerCase()
-                    echo "🔄 Switching traffic to ${deployColor}"
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
                     sh """
-                    kubectl --kubeconfig=$KUBECONFIG -n $K8S_NAMESPACE patch service mediops-svc \
-                      -p '{"spec":{"selector":{"app":"mediops","track":"${deployColor}"}}}'
+                    kubectl --kubeconfig=$KUBECONFIG apply -f k8s/service.yaml -n $K8S_NAMESPACE
+                    kubectl --kubeconfig=$KUBECONFIG apply -f k8s/ingress.yaml -n $K8S_NAMESPACE
                     """
                 }
             }
         }
-}
 
-        stage('Verify & Rollback if Needed') {
+        stage('Switch Traffic (Service selector)') {
             steps {
-                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
-               script {
-                    def deployColor = params.DEPLOY_COLOR.toLowerCase()
-                    def stableColor = (deployColor == "blue") ? "green" : "blue"
-
-                    echo "🔍 Verifying rollout for ${deployColor}..."
-                    def rolloutStatus = sh(
-                        script: "kubectl --kubeconfig=$KUBECONFIG -n $K8S_NAMESPACE rollout status deployment/mediops-app-${deployColor} --timeout=60s || echo FAIL",
-                        returnStdout: true
-                    ).trim()
-
-                    if (rolloutStatus.contains("FAIL")) {
-                        echo "❌ Rollout failed for ${deployColor}! Rolling back to ${stableColor}..."
-
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
+                    script {
+                        def deployColor = params.DEPLOY_COLOR.toLowerCase()
+                        echo "🔄 Switching traffic to ${deployColor}"
                         sh """
                         kubectl --kubeconfig=$KUBECONFIG -n $K8S_NAMESPACE patch service mediops-svc \
-                          -p '{"spec":{"selector":{"app":"mediops","track":"${stableColor}"}}}'
+                          -p '{"spec":{"selector":{"app":"mediops","track":"${deployColor}"}}}'
                         """
-
-                        sh """
-                        aws sns publish \
-                          --topic-arn $SNS_TOPIC_ARN \
-                          --region $AWS_REGION \
-                          --message "🚨 MediOps Rollback triggered! Failed ${deployColor}, rolled back to ${stableColor}. Build: ${BUILD_URL}"
-                        """
-
-                        error("🚨 Rollout failed — rolled back traffic to ${stableColor}")
-                    } else {
-                        echo "✅ Rollout successful for ${deployColor}!"
                     }
                 }
             }
         }
-}
+
+        stage('Verify & Rollback if Needed') {
+            steps {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
+                    script {
+                        def deployColor = params.DEPLOY_COLOR.toLowerCase()
+                        def stableColor = (deployColor == "blue") ? "green" : "blue"
+
+                        echo "🔍 Verifying rollout for ${deployColor}..."
+                        def rolloutStatus = sh(
+                            script: "kubectl --kubeconfig=$KUBECONFIG -n $K8S_NAMESPACE rollout status deployment/mediops-app-${deployColor} --timeout=60s || echo FAIL",
+                            returnStdout: true
+                        ).trim()
+
+                        if (rolloutStatus.contains("FAIL")) {
+                            echo "❌ Rollout failed for ${deployColor}! Rolling back to ${stableColor}..."
+
+                            sh """
+                            kubectl --kubeconfig=$KUBECONFIG -n $K8S_NAMESPACE patch service mediops-svc \
+                              -p '{"spec":{"selector":{"app":"mediops","track":"${stableColor}"}}}'
+                            """
+
+                            sh """
+                            aws sns publish \
+                              --topic-arn $SNS_TOPIC_ARN \
+                              --region $AWS_REGION \
+                              --message "🚨 MediOps Rollback triggered! Failed ${deployColor}, rolled back to ${stableColor}. Build: ${BUILD_URL}"
+                            """
+
+                            error("🚨 Rollout failed — rolled back traffic to ${stableColor}")
+                        } else {
+                            echo "✅ Rollout successful for ${deployColor}!"
+                        }
+                    }
+                }
+            }
+        }
 
         stage('Post-Deployment Status') {
             steps {
