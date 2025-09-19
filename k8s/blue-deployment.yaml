@@ -19,7 +19,7 @@ spec:
         track: blue
     spec:
       containers:
-        - name: mediops-container
+        - name: mediops-app
           image: 921483785411.dkr.ecr.us-east-1.amazonaws.com/mediops-app:v1.0
           imagePullPolicy: Always
           ports:
