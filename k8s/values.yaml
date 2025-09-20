@@ -1,0 +1,9 @@
+server:
+  extraScrapeConfigs:
+    - job_name: 'mediops-app'
+      kubernetes_sd_configs:
+        - role: pod
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_pod_label_app]
+          action: keep
+          regex: mediops

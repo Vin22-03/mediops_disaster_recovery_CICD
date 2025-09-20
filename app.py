@@ -2,9 +2,11 @@ import os
 from flask import Flask, render_template, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text
+from prometheus_flask_exporter import PrometheusMetrics
+
 
 app = Flask(__name__)
-
+metrics = PrometheusMetrics(app)
 # ==============================
 # 🔧 Database Config (from ENV)
 # ==============================
