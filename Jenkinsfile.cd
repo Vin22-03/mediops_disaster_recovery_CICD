@@ -58,13 +58,6 @@ pipeline {
                         # Update image
                         kubectl --kubeconfig=$KUBECONFIG -n $K8S_NAMESPACE set image deployment/mediops-app-${deployColor} mediops-app=$ECR_URL/$APP_NAME:${params.VERSION_TAG}
 
-                        # Inject DB credentials as environment variables
-                        kubectl --kubeconfig=$KUBECONFIG -n $K8S_NAMESPACE set env deployment/mediops-app-${deployColor} \
-                          DB_HOST=$DB_HOST \
-                          DB_PORT=$DB_PORT \
-                          DB_NAME=$DB_NAME \
-                          DB_USER=$DB_USER \
-                          DB_PASSWORD=$DB_PASSWORD
                         """
                     }
                 }
