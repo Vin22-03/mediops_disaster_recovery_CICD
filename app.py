@@ -37,9 +37,16 @@ class Patient(db.Model):
     diagnosis = db.Column(db.String(100))
     status = db.Column(db.String(20))
 
+class Doctor(db.Model):   # ✅ Added Doctor model
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50))
+    specialization = db.Column(db.String(100))
+
 class Appointment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    doctor = db.Column(db.String(50))
+    patient_id = db.Column(db.Integer)
+    doctor_id = db.Column(db.Integer)
+    date = db.Column(db.Date)
     status = db.Column(db.String(20))
 
 class KPI(db.Model):
@@ -76,6 +83,27 @@ def dashboard():
     except Exception as e:
         return f"Database error on dashboard: {e}", 500
 
+# --- ✅ New Pages ---
+@app.route("/patients")
+def patients_page():
+    patients = Patient.query.all()
+    return render_template("patients.html", patients=patients)
+
+@app.route("/doctors")
+def doctors_page():
+    doctors = Doctor.query.all()
+    return render_template("doctors.html", doctors=doctors)
+
+@app.route("/appointments")
+def appointments_page():
+    appointments = Appointment.query.all()
+    return render_template("appointments.html", appointments=appointments)
+
+@app.route("/settings")
+def settings_page():
+    return render_template("settings.html")
+
+# --- APIs ---
 @app.route("/api/patients")
 def api_patients():
     try:
@@ -129,4 +157,4 @@ if __name__ == "__main__":
         print(f"⚠️ Failed to initialize database: {e}")
         # Do NOT raise — let pod start, readiness probe will keep it out of rotation
 
-    app.run(host="0.0.0.0", port=8080, debug=False)
+    app.run(host="0.0.0.0", port=8080)
