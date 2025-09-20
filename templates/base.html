@@ -13,7 +13,9 @@
   <!-- Sidebar -->
   <aside class="w-64 bg-slate-900 text-slate-100 flex flex-col">
     <div class="px-5 py-4 border-b border-slate-800 flex items-center gap-2">
-      <span class="font-semibold">MediOps</span>
+      <a href="{{ url_for('landing') }}" class="font-semibold text-white hover:text-blue-400">
+        MediOps
+      </a>
     </div>
     <nav class="p-4 space-y-2 text-slate-300">
       <a class="block px-3 py-2 rounded-lg hover:bg-slate-800" href="{{ url_for('dashboard') }}">Dashboard</a>
