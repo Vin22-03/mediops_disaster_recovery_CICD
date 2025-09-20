@@ -57,7 +57,12 @@ pipeline {
 
                         # Update image
                         kubectl --kubeconfig=$KUBECONFIG -n $K8S_NAMESPACE set image deployment/mediops-app-${deployColor} mediops-app=$ECR_URL/$APP_NAME:${params.VERSION_TAG}
-
+                        
+                        
+                        # Inject build metadata (for /version page)
+                        kubectl --kubeconfig=$KUBECONFIG -n $K8S_NAMESPACE set env deployment/mediops-app-${deployColor} \
+                        VERSION_TAG=v${params.VERSION_TAG} DEPLOY_COLOR=${deployColor}
+                        
                         """
                     }
                 }

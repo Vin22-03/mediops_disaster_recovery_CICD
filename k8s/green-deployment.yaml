@@ -43,12 +43,6 @@ spec:
                 secretKeyRef:
                   name: mediops-rds-secret
                   key: password
-             # 🔄 Deployment metadata
-            - name: VERSION_TAG
-              value: "v${VERSION_TAG}"      # Jenkins will replace this
-            - name: DEPLOY_COLOR
-              value: "green"
-
 
           readinessProbe:
             httpGet:
