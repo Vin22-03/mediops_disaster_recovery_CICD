@@ -37,8 +37,8 @@ resource "aws_db_instance" "rds" {
   engine_version          = "15" # stable version
   instance_class          = "db.t3.micro" # free tier friendly
   allocated_storage       = 20
-  username                = "admin"
-  password                = "Admin12345!"   # ⚠️ Replace with SSM/Secrets in production
+  username                = "mediopsadmin"
+  password                = "Mediopsadmin12345!"   # ⚠️ Replace with SSM/Secrets in production
   db_subnet_group_name    = aws_db_subnet_group.rds_subnet.name
   vpc_security_group_ids  = [aws_security_group.rds_sg.id]
   skip_final_snapshot     = true
