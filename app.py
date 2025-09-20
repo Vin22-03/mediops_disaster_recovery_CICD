@@ -1,6 +1,7 @@
 from flask import Flask, render_template, jsonify
 from flask_sqlalchemy import SQLAlchemy
 import os
+from sqlalchemy import text
 
 app = Flask(__name__)
 
@@ -72,39 +73,28 @@ def dashboard():
     )
 
 
-# --- APIs ---
 @app.route("/api/patients")
 def api_patients():
     patients = Patient.query.all()
-    return jsonify(
-        [
-            {
-                "name": p.name,
-                "age": p.age,
-                "diagnosis": p.diagnosis,
-                "status": p.status,
-            }
-            for p in patients
-        ]
-    )
+    return jsonify([
+        {"name": p.name, "age": p.age, "diagnosis": p.diagnosis, "status": p.status}
+        for p in patients
+    ])
 
 
 @app.route("/api/kpi")
 def api_kpi():
     kpi = KPI.query.first()
-    return jsonify(
-        {
-            "total_patients": kpi.total_patients if kpi else 0,
-            "active_doctors": kpi.active_doctors if kpi else 0,
-            "todays_appointments": kpi.todays_appointments if kpi else 0,
-            "bed_occupancy": kpi.bed_occupancy if kpi else 0,
-        }
-    )
+    return jsonify({
+        "total_patients": kpi.total_patients if kpi else 0,
+        "active_doctors": kpi.active_doctors if kpi else 0,
+        "todays_appointments": kpi.todays_appointments if kpi else 0,
+        "bed_occupancy": kpi.bed_occupancy if kpi else 0,
+    })
 
 
 @app.route("/patient-outcomes")
 def patient_outcomes():
-    # For now, static KPIs — later we can make it DB-driven too
     PATIENT_KPI = {
         "avg_stay": {"value": "4.5 days", "change": -2.17, "prev": "4.6 days"},
         "readmission": {"value": "12%", "change": -7.69, "prev": "13%"},
@@ -114,16 +104,25 @@ def patient_outcomes():
     return render_template("patient_outcomes.html", kpi=PATIENT_KPI)
 
 
+# ==============================
+# ❤️ Health Check
+# ==============================
 @app.route("/health")
 def health():
-    return "OK", 200
+    try:
+        db.session.execute(text("SELECT 1"))
+        return "OK", 200
+    except Exception as e:
+        return f"Database connection failed: {e}", 500
 
 
 # ==============================
 # 🚀 App Runner
 # ==============================
 if __name__ == "__main__":
-    with app.app_context():
-        db.create_all()  # auto-create tables if not exist
+    try:
+        with app.app_context():
+            db.create_all()
+    except Exception as e:
+        print(f"⚠️ Failed to initialize database: {e}")
     app.run(host="0.0.0.0", port=8080, debug=True)
-
