@@ -2,7 +2,6 @@ import os
 from flask import Flask, render_template, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text
-from werkzeug.exceptions import InternalServerError
 
 app = Flask(__name__)
 
@@ -13,13 +12,13 @@ DB_HOST = os.getenv("DB_HOST")
 DB_PORT = os.getenv("DB_PORT")
 DB_NAME = os.getenv("DB_NAME")
 DB_USER = os.getenv("DB_USER")
-DB_PASS = os.getenv("DB_PASSWORD")  # Corrected to use DB_PASSWORD as per your YAML
+DB_PASS = os.getenv("DB_PASSWORD")  # ✅ matches Secret key
 
-# Strict environment variable check
+# Fail fast if any env is missing
 if not all([DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS]):
-    # In a production environment, raise an error immediately on startup
-    # to prevent a silent failure.
-    raise ValueError("One or more database environment variables are not set. Exiting.")
+    raise ValueError("❌ One or more DB environment variables are not set.")
+
+print(f"🔌 Using DB connection -> host={DB_HOST}, port={DB_PORT}, db={DB_NAME}, user={DB_USER}")
 
 app.config["SQLALCHEMY_DATABASE_URI"] = (
     f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
@@ -31,7 +30,6 @@ db = SQLAlchemy(app)
 # ==============================
 # 🗂️ Database Models
 # ==============================
-# All your model definitions are correct and remain unchanged.
 class Patient(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50))
@@ -51,7 +49,6 @@ class KPI(db.Model):
     todays_appointments = db.Column(db.Integer)
     bed_occupancy = db.Column(db.Integer)
 
-
 # ==============================
 # 🌐 Routes
 # ==============================
@@ -65,7 +62,6 @@ def dashboard():
         patients = Patient.query.all()
         appointments = Appointment.query.all()
         kpi = KPI.query.first()
-
         return render_template(
             "dashboard.html",
             patients=patients,
@@ -78,19 +74,15 @@ def dashboard():
             },
         )
     except Exception as e:
-        # Wrap database access in a try/except block to fail gracefully.
-        return f"Database error on dashboard route: {e}", 500
+        return f"Database error on dashboard: {e}", 500
 
 @app.route("/api/patients")
 def api_patients():
     try:
         patients = Patient.query.all()
-        return jsonify([
-            {"name": p.name, "age": p.age, "diagnosis": p.diagnosis, "status": p.status}
-            for p in patients
-        ])
+        return jsonify([{"name": p.name, "age": p.age, "diagnosis": p.diagnosis, "status": p.status} for p in patients])
     except Exception as e:
-        return f"Database error on API route: {e}", 500
+        return f"Database error: {e}", 500
 
 @app.route("/api/kpi")
 def api_kpi():
@@ -103,7 +95,7 @@ def api_kpi():
             "bed_occupancy": kpi.bed_occupancy if kpi else 0,
         })
     except Exception as e:
-        return f"Database error on KPI route: {e}", 500
+        return f"Database error: {e}", 500
 
 @app.route("/patient-outcomes")
 def patient_outcomes():
@@ -130,17 +122,11 @@ def health():
 # 🚀 App Runner
 # ==============================
 if __name__ == "__main__":
-    # The application context is necessary for creating the database schema.
     try:
         with app.app_context():
             db.create_all()
     except Exception as e:
         print(f"⚠️ Failed to initialize database: {e}")
-        # Raising the exception will ensure the application exits if the database
-        # cannot be initialized, preventing a crash loop.
-        raise InternalServerError("Failed to initialize database.") from e
+        # Do NOT raise — let pod start, readiness probe will keep it out of rotation
 
-    # Ensure debug mode is turned off for production.
-    # The `if __name__ == "__main__"` block is usually used for local development.
-    # In a production container, you would use a WSGI server like Gunicorn.
-    app.run(host="0.0.0.0", port=8080)
+    app.run(host="0.0.0.0", port=8080, debug=False)
