@@ -48,18 +48,24 @@ spec:
             httpGet:
               path: /health
               port: 8080
-            initialDelaySeconds: 5
-            periodSeconds: 5
+            initialDelaySeconds: 20   # wait 20s before first check
+            periodSeconds: 10         # check every 10s
+            timeoutSeconds: 3
+            failureThreshold: 6       # ~60s grace before marking NotReady
+
           livenessProbe:
             httpGet:
               path: /health
               port: 8080
-            initialDelaySeconds: 15
-            periodSeconds: 10
+            initialDelaySeconds: 40   # give app/DB more time to be ready
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+
           resources:
             requests:
               cpu: "100m"
-              memory: "128Mi"
+              memory: "256Mi"
             limits:
               cpu: "500m"
-              memory: "512Mi"
+              memory: "1Gi"
