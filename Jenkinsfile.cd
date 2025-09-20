@@ -15,6 +15,11 @@ pipeline {
         KUBECONFIG     = "${env.WORKSPACE}/kubeconfig"
         SNS_TOPIC_ARN  = "arn:aws:sns:us-east-1:921483785411:mediops-alerts"
         K8S_NAMESPACE  = "mediops"
+
+        // 🔧 DB connection values
+        DB_HOST        = "mediops-postgres.cu3sqia20xju.us-east-1.rds.amazonaws.com"
+        DB_PORT        = "5432"
+        DB_NAME        = "mediopsdb"
     }
 
     stages {
@@ -35,7 +40,8 @@ pipeline {
 
         stage('Deploy App') {
             steps {
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr'],
+                                 usernamePassword(credentialsId: 'mediops-rds-creds', usernameVariable: 'DB_USER', passwordVariable: 'DB_PASSWORD')]) {
                     script {
                         def deployColor = params.DEPLOY_COLOR.toLowerCase()
                         def image = "${ECR_URL}/${APP_NAME}:${params.VERSION_TAG}"
@@ -46,9 +52,19 @@ pipeline {
                         # Ensure namespace exists
                         kubectl --kubeconfig=$KUBECONFIG apply -f k8s/namespace.yaml
 
-                        # Apply deployment if missing, then update image
+                        # Apply deployment YAML
                         kubectl --kubeconfig=$KUBECONFIG apply -f k8s/${deployColor}-deployment.yaml -n $K8S_NAMESPACE
+
+                        # Update image
                         kubectl --kubeconfig=$KUBECONFIG -n $K8S_NAMESPACE set image deployment/mediops-app-${deployColor} mediops-app=$ECR_URL/$APP_NAME:${params.VERSION_TAG}
+
+                        # Inject DB credentials as environment variables
+                        kubectl --kubeconfig=$KUBECONFIG -n $K8S_NAMESPACE set env deployment/mediops-app-${deployColor} \
+                          DB_HOST=$DB_HOST \
+                          DB_PORT=$DB_PORT \
+                          DB_NAME=$DB_NAME \
+                          DB_USER=$DB_USER \
+                          DB_PASSWORD=$DB_PASSWORD
                         """
                     }
                 }
@@ -121,16 +137,16 @@ pipeline {
 
         stage('Post-Deployment Status') {
             steps {
-              withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
-                sh """
-                kubectl --kubeconfig=$KUBECONFIG get pods -n $K8S_NAMESPACE -o wide
-                kubectl --kubeconfig=$KUBECONFIG get svc -n $K8S_NAMESPACE
-                kubectl --kubeconfig=$KUBECONFIG get ingress mediops-ing -n $K8S_NAMESPACE -o wide
-                """
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
+                    sh """
+                    kubectl --kubeconfig=$KUBECONFIG get pods -n $K8S_NAMESPACE -o wide
+                    kubectl --kubeconfig=$KUBECONFIG get svc -n $K8S_NAMESPACE
+                    kubectl --kubeconfig=$KUBECONFIG get ingress mediops-ing -n $K8S_NAMESPACE -o wide
+                    """
+                }
             }
         }
     }
-}
 
     post {
         success { echo "✅ CD pipeline completed successfully!" }

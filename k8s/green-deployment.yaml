@@ -24,6 +24,26 @@ spec:
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
+
+          # 🔑 Environment variables for DB connection
+          env:
+            - name: DB_HOST
+              value: "mediops-postgres.cu3sqia20xju.us-east-1.rds.amazonaws.com"
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: "mediopsdb"
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mediops-rds-secret
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mediops-rds-secret
+                  key: password
+
           readinessProbe:
             httpGet: { path: /health, port: 8080 }
             initialDelaySeconds: 5
