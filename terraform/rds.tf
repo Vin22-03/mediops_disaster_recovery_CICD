@@ -34,7 +34,7 @@ resource "aws_security_group" "rds_sg" {
 resource "aws_db_instance" "rds" {
   identifier              = "${var.project}-postgres"
   engine                  = "postgres"
-  engine_version          = "15.6" # stable version
+  engine_version          = "15" # stable version
   instance_class          = "db.t3.micro" # free tier friendly
   allocated_storage       = 20
   username                = "admin"
