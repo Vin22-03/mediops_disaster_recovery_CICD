@@ -1,24 +1,31 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 {% block content %}
-<div class="container mt-4">
-  <h2 class="mb-4">Doctors List</h2>
-  <table class="table table-bordered table-striped">
-    <thead class="table-dark">
-      <tr>
-        <th>ID</th>
-        <th>Name</th>
-        <th>Specialization</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for d in doctors %}
-      <tr>
-        <td>{{ d.id }}</td>
-        <td>{{ d.name }}</td>
-        <td>{{ d.specialization }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<div class="min-h-screen">
+  <h1 class="text-2xl font-bold mb-6">Doctors</h1>
+  <div class="bg-white rounded-2xl p-5 shadow border">
+    <h3 class="font-semibold">All Doctors</h3>
+    <div class="mt-4 overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="bg-slate-100 text-slate-600">
+          <tr>
+            <th class="px-3 py-2 text-left">ID</th>
+            <th class="px-3 py-2 text-left">Name</th>
+            <th class="px-3 py-2 text-left">Specialization</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in doctors %}
+          <tr class="border-b">
+            <td class="px-3 py-2">{{ d.id }}</td>
+            <td class="px-3 py-2">{{ d.name }}</td>
+            <td class="px-3 py-2">{{ d.specialization }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="3" class="text-center text-slate-500 py-3">No doctors found</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
 </div>
 {% endblock %}

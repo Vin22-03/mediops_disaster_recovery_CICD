@@ -1,28 +1,42 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 {% block content %}
-<div class="container mt-4">
-  <h2 class="mb-4">Patient Records</h2>
-  <table class="table table-striped">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Name</th>
-        <th>Age</th>
-        <th>Diagnosis</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for p in patients %}
-      <tr>
-        <td>{{ p.id }}</td>
-        <td>{{ p.name }}</td>
-        <td>{{ p.age }}</td>
-        <td>{{ p.diagnosis }}</td>
-        <td>{{ p.status }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<div class="min-h-screen">
+  <h1 class="text-2xl font-bold mb-6">Patients</h1>
+  <div class="bg-white rounded-2xl p-5 shadow border">
+    <h3 class="font-semibold">All Patients</h3>
+    <div class="mt-4 overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="bg-slate-100 text-slate-600">
+          <tr>
+            <th class="px-3 py-2 text-left">ID</th>
+            <th class="px-3 py-2 text-left">Name</th>
+            <th class="px-3 py-2 text-left">Age</th>
+            <th class="px-3 py-2 text-left">Diagnosis</th>
+            <th class="px-3 py-2 text-left">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in patients %}
+          <tr class="border-b">
+            <td class="px-3 py-2">{{ p.id }}</td>
+            <td class="px-3 py-2">{{ p.name }}</td>
+            <td class="px-3 py-2">{{ p.age }}</td>
+            <td class="px-3 py-2">{{ p.diagnosis }}</td>
+            <td class="px-3 py-2">
+              {% set badge =
+                 'bg-emerald-100 text-emerald-700' if p.status=='Recovered' else
+                 'bg-amber-100 text-amber-700' if p.status=='Ongoing' else
+                 'bg-red-100 text-red-700' if p.status=='Critical' else
+                 'bg-slate-100 text-slate-700' %}
+              <span class="px-2 py-1 rounded-lg text-xs font-medium {{ badge }}">{{ p.status }}</span>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5" class="text-center text-slate-500 py-3">No patients found</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
 </div>
 {% endblock %}

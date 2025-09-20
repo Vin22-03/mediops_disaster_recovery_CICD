@@ -1,105 +1,83 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="min-h-screen flex">
-  <!-- Sidebar -->
-  <aside class="w-64 bg-slate-900 text-slate-100 hidden md:flex flex-col">
-    <div class="px-5 py-4 border-b border-slate-800 flex items-center gap-2">
-      <span class="font-semibold">MediOps</span>
+<div class="min-h-screen">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold">Dashboard</h1>
+    <p class="text-slate-500">Zero Downtime • Zero Data Loss • 100% Care</p>
+  </div>
+
+  <!-- Condition Chart -->
+  <div class="h-64 w-full max-w-lg mx-auto mb-6">
+    <canvas id="conditionChart"></canvas>
+  </div>
+
+  <!-- Tables -->
+  <section class="grid gap-6 lg:grid-cols-3">
+    <!-- Patient Records -->
+    <div class="bg-white rounded-2xl p-5 shadow border lg:col-span-2">
+      <h3 class="font-semibold">Patient Records</h3>
+      <div class="mt-4 overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-slate-100 text-slate-600">
+            <tr>
+              <th class="px-3 py-2 text-left">Name</th>
+              <th class="px-3 py-2 text-left">Age</th>
+              <th class="px-3 py-2 text-left">Diagnosis</th>
+              <th class="px-3 py-2 text-left">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in patients %}
+            <tr class="border-b">
+              <td class="px-3 py-2">{{ p.name }}</td>
+              <td class="px-3 py-2">{{ p.age }}</td>
+              <td class="px-3 py-2">{{ p.diagnosis }}</td>
+              <td class="px-3 py-2">
+                {% set badge =
+                   'bg-emerald-100 text-emerald-700' if p.status=='Recovered' else
+                   'bg-amber-100 text-amber-700' if p.status=='Ongoing' else
+                   'bg-red-100 text-red-700' if p.status=='Critical' else
+                   'bg-slate-100 text-slate-700' %}
+                <span class="px-2 py-1 rounded-lg text-xs font-medium {{ badge }}">{{ p.status }}</span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
-    <nav class="p-4 space-y-2 text-slate-300">
-      <a class="block px-3 py-2 rounded-lg bg-slate-800 text-white" href="/dashboard">Dashboard</a>
-      <a class="block px-3 py-2 rounded-lg hover:bg-slate-800" href="/patient-outcomes">Patient Outcomes</a>
-      <a class="block px-3 py-2 rounded-lg hover:bg-slate-800" href="#">Patients</a>
-      <a class="block px-3 py-2 rounded-lg hover:bg-slate-800" href="#">Doctors</a>
-      <a class="block px-3 py-2 rounded-lg hover:bg-slate-800" href="#">Appointments</a>
-      <a class="block px-3 py-2 rounded-lg hover:bg-slate-800" href="#">Settings</a>
-    </nav>
-  </aside>
 
-  <!-- Main Content -->
-  <main class="flex-1 p-5 md:p-8">
-    <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold">Dashboard</h1>
-      <p class="text-slate-500">Zero Downtime • Zero Data Loss • 100% Care</p>
+    <!-- Upcoming Appointments -->
+    <div class="bg-white rounded-2xl p-5 shadow border">
+      <h3 class="font-semibold">Upcoming Appointments</h3>
+      <ul class="mt-4 space-y-3">
+        {% for a in appointments %}
+        <li class="flex items-center justify-between px-3 py-2 rounded-lg bg-slate-50 border">
+          <span>Patient {{ a.patient_id }} → Doctor {{ a.doctor_id }} ({{ a.date }})</span>
+          {% set color =
+             'bg-blue-100 text-blue-700' if a.status=='Completed' else
+             'bg-amber-100 text-amber-700' if a.status=='Scheduled' else
+             'bg-emerald-100 text-emerald-700' if a.status=='Ongoing' else
+             'bg-red-100 text-red-700' %}
+          <span class="px-2 py-0.5 rounded-md text-xs font-medium {{ color }}">{{ a.status }}</span>
+        </li>
+        {% else %}
+        <li class="text-slate-500">No upcoming appointments</li>
+        {% endfor %}
+      </ul>
     </div>
-<div class="h-64 w-full max-w-lg mx-auto">
-  <canvas id="conditionChart"></canvas>
+  </section>
 </div>
-</section>
-
-
-<!-- Tables -->
-<section class="mt-6 grid gap-6 lg:grid-cols-3">
-<div class="bg-white rounded-2xl p-5 shadow border lg:col-span-2">
-<h3 class="font-semibold">Patient Records</h3>
-<div class="mt-4 overflow-x-auto">
-<table class="min-w-full text-sm">
-<thead class="bg-slate-100 text-slate-600">
-<tr>
-<th class="px-3 py-2 text-left">Name</th>
-<th class="px-3 py-2 text-left">Age</th>
-<th class="px-3 py-2 text-left">Diagnosis</th>
-<th class="px-3 py-2 text-left">Status</th>
-</tr>
-</thead>
-<tbody>
-{% for p in patients %}
-<tr class="border-b">
-<td class="px-3 py-2">{{ p.name }}</td>
-<td class="px-3 py-2">{{ p.age }}</td>
-<td class="px-3 py-2">{{ p.diagnosis }}</td>
-<td class="px-3 py-2">
-{% set badge = 'bg-emerald-100 text-emerald-700' if p.status=='Admitted' else 'bg-slate-100 text-slate-700' %}
-<span class="px-2 py-1 rounded-lg text-xs font-medium {{ badge }}">{{ p.status }}</span>
-</td>
-</tr>
-{% endfor %}
-</tbody>
-</table>
-</div>
-</div>
-<div class="bg-white rounded-2xl p-5 shadow border">
-<h3 class="font-semibold">Upcoming Appointments</h3>
-<ul class="mt-4 space-y-3">
-{% for a in appointments %}
-<li class="flex items-center justify-between px-3 py-2 rounded-lg bg-slate-50 border">
-<span>{{ a.doctor }}</span>
-{% set color = 'bg-blue-100 text-blue-700' if a.status=='Completed' else 'bg-amber-100 text-amber-700' %}
-<span class="px-2 py-0.5 rounded-md text-xs font-medium {{ color }}">{{ a.status }}</span>
-</li>
-{% endfor %}
-</ul>
-</div>
-</section>
-</main>
-</div>
-
 
 <script>
-// Department chart
-const deptCtx = document.getElementById('deptChart');
-new Chart(deptCtx, {
-type: 'bar',
-data: {
-labels: ['Cardiology','Orthopedics','Pediatrics','General'],
-datasets: [{
-label: 'Appointments',
-data: [32, 21, 18, 27]
-}]
-},
-options: { responsive: true, plugins: { legend: { display: false } } }
-});
-
-
-// Condition chart
 const condCtx = document.getElementById('conditionChart');
 new Chart(condCtx, {
-type: 'doughnut',
-data: {
-labels: ['Diabetes','Hypertension','Flu','Other'],
-datasets: [{ data: [25, 30, 20, 25] }]
-},
-options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+  type: 'doughnut',
+  data: {
+    labels: ['Diabetes','Hypertension','Flu','Other'],
+    datasets: [{ data: [25, 30, 20, 25] }]
+  },
+  options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
 });
 </script>
 {% endblock %}
