@@ -31,6 +31,7 @@ db = SQLAlchemy(app)
 # 🗂️ Database Models
 # ==============================
 class Patient(db.Model):
+    __tablename__ = "patients"
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50))
     age = db.Column(db.Integer)
@@ -38,11 +39,13 @@ class Patient(db.Model):
     status = db.Column(db.String(20))
 
 class Doctor(db.Model):   # ✅ Added Doctor model
+    __tablename__ = "doctors"
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50))
     specialization = db.Column(db.String(100))
 
 class Appointment(db.Model):
+    __tablename__ = "appointments"
     id = db.Column(db.Integer, primary_key=True)
     patient_id = db.Column(db.Integer)
     doctor_id = db.Column(db.Integer)
@@ -50,6 +53,7 @@ class Appointment(db.Model):
     status = db.Column(db.String(20))
 
 class KPI(db.Model):
+    __tablename__ = "kpi"
     id = db.Column(db.Integer, primary_key=True)
     total_patients = db.Column(db.Integer)
     active_doctors = db.Column(db.Integer)
@@ -142,7 +146,7 @@ def patient_outcomes():
 def health():
     try:
         db.session.execute(text("SELECT 1"))
-        return "OK", 200
+        return "Yeah am Healthy OK", 200
     except Exception as e:
         return f"Database connection failed: {e}", 500
 
