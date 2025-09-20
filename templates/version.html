@@ -1,0 +1,15 @@
+{% extends 'landing_base.html' %}
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-500 to-green-500">
+  <div class="bg-white rounded-2xl shadow-xl p-10 text-center max-w-md">
+    <h1 class="text-4xl font-extrabold text-slate-800">🚀 MediOps</h1>
+    <p class="mt-4 text-lg text-slate-600">Running Build</p>
+    <p class="mt-2 text-3xl font-bold text-blue-600">{{ version }}</p>
+    <p class="mt-6 text-lg">Active Environment:</p>
+    <span class="inline-block mt-2 px-4 py-2 rounded-lg text-white font-semibold 
+      {% if color == 'blue' %} bg-blue-600 {% else %} bg-green-600 {% endif %}">
+      {{ color|capitalize }}
+    </span>
+  </div>
+</div>
+{% endblock %}

@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+     parameters {
+        choice(name: 'DEPLOY_COLOR', choices: ['blue', 'green'], description: 'Choose which version to deploy')
+    }
+
     environment {
         APP_NAME   = "mediops-app"
         IMAGE_TAG  = "${BUILD_NUMBER}"
@@ -77,7 +81,7 @@ pipeline {
                 build job: 'MediOps-CD',
                       parameters: [
                           string(name: 'VERSION_TAG', value: env.BUILD_NUMBER),
-                          string(name: 'DEPLOY_COLOR', value: 'blue'),
+                          string(name: 'DEPLOY_COLOR', value: params.DEPLOY_COLOR),
                           booleanParam(name: 'APPLY_SERVICES', value: true)
                       ],
                       wait: false

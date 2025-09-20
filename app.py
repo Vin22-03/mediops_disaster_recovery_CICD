@@ -139,6 +139,14 @@ def patient_outcomes():
     }
     return render_template("patient_outcomes.html", kpi=PATIENT_KPI)
 
+
+@app.route("/version")
+def version():
+    version_tag = os.getenv("VERSION_TAG", "dev")
+    deploy_color = os.getenv("DEPLOY_COLOR", "unknown")
+    return render_template("version.html", version=version_tag, color=deploy_color)
+
+
 # ==============================
 # ❤️ Health Check
 # ==============================
