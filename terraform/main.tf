@@ -403,7 +403,48 @@ resource "aws_s3_bucket_replication_configuration" "replication" {
       bucket        = aws_s3_bucket.dr_bucket_secondary.arn
       storage_class = "STANDARD"
     }
+  name = "${var.project}-s3-replication-policy"
+  role = aws_iam_role.s3_replication_role.id
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [{
+      Effect = "Allow",
+      Action = [
+        "s3:GetObjectVersionForReplication",
+        "s3:ListBucket",
+        "s3:ReplicateObject"
+      ],
+      Resource = [
+        "${aws_s3_bucket.dr_bucket.arn}",
+        "${aws_s3_bucket.dr_bucket.arn}/*",
+        "${aws_s3_bucket.dr_bucket_secondary.arn}",
+        "${aws_s3_bucket.dr_bucket_secondary.arn}/*"
+      ]
+    }]
+  })
+}
+
+resource "aws_s3_bucket_replication_configuration" "replication" {
+  bucket = aws_s3_bucket.dr_bucket.id
+  role   = aws_iam_role.s3_replication_role.arn
+
+  rule {
+    id     = "ReplicateAll"
+    status = "Enabled"
+    filter {}
+    destination {
+      bucket        = aws_s3_bucket.dr_bucket_secondary.arn
+      storage_class = "STANDARD"
+    }
   }
+  depends_on = [
+    aws_s3_bucket_versioning.ver,                  # source bucket versioning
+    aws_s3_bucket_versioning.dr_bucket_secondary_ver  # destination bucket versioning
+
+}
+
+########################
+# 🔔 SNS Topic + Email Subscription  }
 }
 
 ########################
