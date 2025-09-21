@@ -406,7 +406,12 @@ resource "aws_s3_bucket_replication_configuration" "replication" {
       bucket        = aws_s3_bucket.dr_bucket_secondary.arn
       storage_class = "STANDARD"
     }
-  }
+    
+    # 👇 Required by latest AWS schema
+    delete_marker_replication {
+      status = "Disabled"
+   }
+ }
 
   depends_on = [
     aws_s3_bucket_versioning.ver,                  # source bucket versioning
