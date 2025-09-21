@@ -441,6 +441,7 @@ resource "aws_s3_bucket_replication_configuration" "replication" {
     aws_s3_bucket_versioning.ver,                  # source bucket versioning
     aws_s3_bucket_versioning.dr_bucket_secondary_ver  # destination bucket versioning
 
+    ]
 }
 
 ########################
