@@ -152,8 +152,8 @@
 # - Primary Bucket: ![Primary Bucket](https://github.com/Vin22-03/mediops_disaster_recovery_CICD/blob/main/Screenshots/Primary_bucket.png)
 # - Secondary Bucket_Replication: ![Secondary Bucket_Replication](https://github.com/Vin22-03/mediops_disaster_recovery_CICD/blob/main/Screenshots/Backup_replicated_Bucket.png)
 # - SNS Email Confirm: ![SNS Email Confirm](https://github.com/Vin22-03/mediops_disaster_recovery_CICD/blob/main/Screenshots/SNS_EMail_confirm.png)
-# - Rollback Alert: <img src="https://github.com/Vin22-03/mediops_disaster_recovery_CICD/blob/main/Screenshots/SNS_Email.jpg?raw=true" width="400" alt="Rollback Alert SNS Email" />
-# - : ![]()
+# - Rollback Alert: ![Rollback Alert](https://github.com/Vin22-03/mediops_disaster_recovery_CICD/blob/main/Screenshots/SNS_Email.jpg?raw=true)
+# - Static Hosting_S3: ![Static Hosting_S3](https://github.com/Vin22-03/mediops_disaster_recovery_CICD/blob/main/Screenshots/Static_S3.png)
 # - : ![]()
 
 ---
