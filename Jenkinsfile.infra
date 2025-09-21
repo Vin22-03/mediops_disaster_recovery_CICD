@@ -13,7 +13,8 @@ pipeline {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
                     sh """
                     cd $TF_DIR
-                    terraform init -input=false
+                    # Reconfigure backend to use S3 instead of local tfstate
+                    terraform init -migrate-state -input=false
                     terraform validate
                     terraform plan -input=false -out=tfplan
                     """
