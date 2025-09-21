@@ -349,7 +349,7 @@ resource "aws_s3_bucket" "dr_bucket_secondary" {
 }
 
 resource "aws_s3_bucket_versioning" "dr_bucket_secondary_ver" {
-  provider = aws.secondary   # 👈 important
+  provider = aws.secondary
   bucket   = aws_s3_bucket.dr_bucket_secondary.id
 
   versioning_configuration {
@@ -357,6 +357,7 @@ resource "aws_s3_bucket_versioning" "dr_bucket_secondary_ver" {
   }
 }
 
+# IAM Role + Policy for replication
 resource "aws_iam_role" "s3_replication_role" {
   name = "${var.project}-s3-replication-role"
   assume_role_policy = jsonencode({
@@ -391,6 +392,7 @@ resource "aws_iam_role_policy" "s3_replication_policy" {
   })
 }
 
+# Replication configuration
 resource "aws_s3_bucket_replication_configuration" "replication" {
   bucket = aws_s3_bucket.dr_bucket.id
   role   = aws_iam_role.s3_replication_role.arn
@@ -399,53 +401,17 @@ resource "aws_s3_bucket_replication_configuration" "replication" {
     id     = "ReplicateAll"
     status = "Enabled"
     filter {}
-    destination {
-      bucket        = aws_s3_bucket.dr_bucket_secondary.arn
-      storage_class = "STANDARD"
-    }
-  name = "${var.project}-s3-replication-policy"
-  role = aws_iam_role.s3_replication_role.id
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [{
-      Effect = "Allow",
-      Action = [
-        "s3:GetObjectVersionForReplication",
-        "s3:ListBucket",
-        "s3:ReplicateObject"
-      ],
-      Resource = [
-        "${aws_s3_bucket.dr_bucket.arn}",
-        "${aws_s3_bucket.dr_bucket.arn}/*",
-        "${aws_s3_bucket.dr_bucket_secondary.arn}",
-        "${aws_s3_bucket.dr_bucket_secondary.arn}/*"
-      ]
-    }]
-  })
-}
 
-resource "aws_s3_bucket_replication_configuration" "replication" {
-  bucket = aws_s3_bucket.dr_bucket.id
-  role   = aws_iam_role.s3_replication_role.arn
-
-  rule {
-    id     = "ReplicateAll"
-    status = "Enabled"
-    filter {}
     destination {
       bucket        = aws_s3_bucket.dr_bucket_secondary.arn
       storage_class = "STANDARD"
     }
   }
+
   depends_on = [
     aws_s3_bucket_versioning.ver,                  # source bucket versioning
     aws_s3_bucket_versioning.dr_bucket_secondary_ver  # destination bucket versioning
-
-    ]
-}
-
-########################
-# 🔔 SNS Topic + Email Subscription  }
+  ]
 }
 
 ########################
