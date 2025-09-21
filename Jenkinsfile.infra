@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    parameters {
+        choice(name: 'ACTION', choices: ['APPLY', 'DESTROY'], description: 'Choose whether to apply or destroy infra')
+    }
+
     environment {
         AWS_REGION   = "us-east-1"
         TF_DIR       = "terraform"
@@ -8,70 +12,78 @@ pipeline {
     }
 
     stages {
-        stage('Terraform Init & Plan') {
+        stage('Terraform Init') {
             steps {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
                     sh """
                     cd $TF_DIR
-                    # Reconfigure backend to use S3 instead of local tfstate
                     terraform init -reconfigure -force-copy -input=false
                     terraform validate
+                    """
+                }
+            }
+        }
+
+        stage('Terraform Plan') {
+            when { expression { params.ACTION == 'APPLY' } }
+            steps {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
+                    sh """
+                    cd $TF_DIR
                     terraform plan -input=false -out=tfplan
                     """
                 }
             }
         }
 
-        stage('Configure kubeconfig') {
-            steps {
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
-                    sh """
-                    echo "🔧 Setting up kubeconfig for EKS cluster"
-                    aws eks update-kubeconfig \
-                      --region $AWS_REGION \
-                      --name mediops-eks \
-                      --kubeconfig $KUBECONFIG
-
-                    export KUBECONFIG=$KUBECONFIG
-                    """
-                }
-            }
-        }
-
         stage('Terraform Apply') {
+            when { expression { params.ACTION == 'APPLY' } }
             steps {
-                input message: "Approve infra changes?", ok: "Apply"
+                input message: "Approve infra apply?", ok: "Apply"
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
                     sh """
                     cd $TF_DIR
-                    export KUBECONFIG=$KUBECONFIG
                     terraform apply -input=false -auto-approve tfplan
                     """
                 }
             }
         }
 
-        /*
         stage('Terraform Destroy') {
+            when { expression { params.ACTION == 'DESTROY' } }
             steps {
-                input message: "Are you sure you want to destroy all infra?", ok: "Destroy"
+                input message: "⚠️ Are you sure you want to destroy infra (tfstate bucket will be kept)?", ok: "Destroy"
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
                     sh """
                     cd $TF_DIR
-                    terraform destroy -auto-approve
+                    terraform destroy -auto-approve \
+                      -target=aws_vpc.main \
+                      -target=aws_subnet.public \
+                      -target=aws_subnet.private \
+                      -target=aws_nat_gateway.nat \
+                      -target=aws_internet_gateway.igw \
+                      -target=aws_eks_cluster.main \
+                      -target=aws_eks_node_group.node_group \
+                      -target=aws_db_instance.rds \
+                      -target=aws_s3_bucket.dr_bucket \
+                      -target=aws_s3_bucket.dr_bucket_secondary \
+                      -target=aws_sns_topic.alerts \
+                      -target=aws_iam_role.eks_cluster_role \
+                      -target=aws_iam_role.eks_node_role \
+                      -target=aws_iam_role.alb_sa_role \
+                      -target=aws_iam_role.s3_replication_role
                     """
                 }
             }
         }
-        */
     }
 
     post {
         success {
-            echo "✅ Terraform infrastructure applied successfully!"
+            echo "✅ Terraform ${params.ACTION} finished successfully!"
         }
         failure {
-            echo "❌ Terraform apply failed!"
+            echo "❌ Terraform ${params.ACTION} failed!"
         }
     }
 }
