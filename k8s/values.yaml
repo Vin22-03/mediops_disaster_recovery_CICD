@@ -1,9 +1,33 @@
-server:
-  extraScrapeConfigs:
-    - job_name: 'mediops-app'
-      kubernetes_sd_configs:
-        - role: pod
-      relabel_configs:
-        - source_labels: [__meta_kubernetes_pod_label_app]
-          action: keep
-          regex: mediops
+# values.yaml for kube-prometheus-stack
+# Clean + stable setup
+
+grafana:
+  enabled: true
+  adminPassword: admin
+  service:
+    type: LoadBalancer
+
+alertmanager:
+  enabled: true
+  alertmanagerSpec:
+    storage: {}
+  service:
+    type: ClusterIP
+
+prometheus:
+  prometheusSpec:
+    # Use PVC instead of emptyDir
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: "gp2-csi"
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 20Gi   # adjust based on your needs
+    serviceMonitorSelector: {}
+    podMonitorSelector: {}
+    ruleSelector: {}
+    scrapeConfigSelector: {}
+
+# Disable additionalScrapeConfigs — ServiceMonitor handles it

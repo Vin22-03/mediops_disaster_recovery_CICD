@@ -1,0 +1,18 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: mediops-app-sm
+  namespace: monitoring
+  labels:
+    release: mediops-prom   # must match your Helm release name
+spec:
+  selector:
+    matchLabels:
+      app: mediops          # 👈 matches your Service label
+  namespaceSelector:
+    matchNames:
+      - mediops             # namespace where app is running
+  endpoints:
+    - port: http            # 👈 must match Service port name
+      path: /metrics
+      interval: 15s
