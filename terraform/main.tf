@@ -348,6 +348,14 @@ resource "aws_s3_bucket" "dr_bucket_secondary" {
   tags     = local.tags
 }
 
+resource "aws_s3_bucket_versioning" "dr_bucket_secondary_ver" {
+  bucket = aws_s3_bucket.dr_bucket_secondary.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
 resource "aws_iam_role" "s3_replication_role" {
   name = "${var.project}-s3-replication-role"
   assume_role_policy = jsonencode({
