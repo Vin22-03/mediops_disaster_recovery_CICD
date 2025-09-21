@@ -349,7 +349,8 @@ resource "aws_s3_bucket" "dr_bucket_secondary" {
 }
 
 resource "aws_s3_bucket_versioning" "dr_bucket_secondary_ver" {
-  bucket = aws_s3_bucket.dr_bucket_secondary.id
+  provider = aws.secondary   # 👈 important
+  bucket   = aws_s3_bucket.dr_bucket_secondary.id
 
   versioning_configuration {
     status = "Enabled"
