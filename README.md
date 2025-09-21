@@ -83,14 +83,20 @@
 
 ## 🚀 CI/CD Pipeline  
 
-1. Developer pushes code → GitHub  
-2. Jenkins pipeline triggers (webhook)  
-3. Stages:  
-   - **Terraform** → Infra provisioning  
-   - **Docker** → Build & Push image to ECR  
-   - **Trivy/Syft/SonarQube** → Security + Quality scans  
-   - **Deploy to EKS** → Blue/Green Pods updated  
-4. ALB routes traffic → ensures zero downtime  
+The MediOps project follows a modern **GitOps-inspired CI/CD workflow** with security and zero-downtime built in:  
+
+1. **Code Commit** → Developer pushes changes to **GitHub** (main branch).  
+2. **CI Trigger** → A **GitHub Webhook** automatically triggers the **Jenkins pipeline**.  
+3. **Pipeline Stages**:  
+   - 🏗️ **Infrastructure as Code (Terraform)** → Provisions/updates AWS infra (VPC, EKS, RDS, S3, ALB).  
+   - 🐳 **Docker Build & Push** → Builds app image and pushes to **Amazon ECR**.  
+   - 🔐 **DevSecOps Checks** → Runs **Trivy (vulnerability scan)**, **Syft (SBOM)**, and **SonarQube (code quality)**.  
+   - 🚀 **Continuous Deployment (EKS)** → Applies manifests, updates **Blue/Green pods** to ensure zero downtime.  
+4. **Routing & Availability** → **AWS ALB** automatically directs traffic to the healthy version (Blue or Green).  
+5. **Observability & Rollback**:  
+   - 📊 **Prometheus + Grafana** monitor app metrics & health.  
+   - ⚡ On failure, pipeline triggers **rollback** to last stable version and sends **SNS email alerts**.  
+ 
 
 ---
 
