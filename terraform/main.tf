@@ -1,6 +1,6 @@
 ############################################################
-# main.tf – MediOps Disaster Recovery Infra (Clean Setup)
-# Author: VinCloudOps | Date: 19 Sept 2025
+# main.tf – MediOps Disaster Recovery Infra (Final Version)
+# Author: VinCloudOps | Date: 21 Sept 2025
 # Region: us-east-1 | One NAT | With DR-S3 + EKS + ALB
 ############################################################
 terraform {
@@ -18,6 +18,14 @@ terraform {
       source  = "hashicorp/helm"
       version = "~> 2.13"
     }
+  }
+
+  # 🔹 Store Terraform state in S3 (disaster-proof)
+  backend "s3" {
+    bucket = "mediops-tfstate-bucket"   # create manually once
+    key    = "infra/terraform.tfstate"
+    region = "us-east-1"
+    encrypt = true
   }
 }
 
@@ -272,7 +280,7 @@ resource "aws_iam_role" "alb_sa_role" {
 resource "aws_iam_policy" "alb_controller_policy" {
   name        = "${local.name}-alb-policy"
   description = "Policy for AWS Load Balancer Controller"
-  policy      = file("${path.module}/alb-policy.json")  # ⛳ Add this file in same folder
+  policy      = file("${path.module}/alb-policy.json")
 }
 
 resource "aws_iam_role_policy_attachment" "alb_policy" {
@@ -328,6 +336,67 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "sse" {
   }
 }
 
+# 🔹 Secondary DR bucket in us-east-2 for replication
+provider "aws" {
+  alias  = "secondary"
+  region = "us-east-2"
+}
+
+resource "aws_s3_bucket" "dr_bucket_secondary" {
+  provider = aws.secondary
+  bucket   = "${var.project}-dr-backup-${random_id.rand.hex}"
+  tags     = local.tags
+}
+
+resource "aws_iam_role" "s3_replication_role" {
+  name = "${var.project}-s3-replication-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [{
+      Effect = "Allow",
+      Principal = { Service = "s3.amazonaws.com" },
+      Action = "sts:AssumeRole"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy" "s3_replication_policy" {
+  name = "${var.project}-s3-replication-policy"
+  role = aws_iam_role.s3_replication_role.id
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [{
+      Effect = "Allow",
+      Action = [
+        "s3:GetObjectVersionForReplication",
+        "s3:ListBucket",
+        "s3:ReplicateObject"
+      ],
+      Resource = [
+        "${aws_s3_bucket.dr_bucket.arn}",
+        "${aws_s3_bucket.dr_bucket.arn}/*",
+        "${aws_s3_bucket.dr_bucket_secondary.arn}",
+        "${aws_s3_bucket.dr_bucket_secondary.arn}/*"
+      ]
+    }]
+  })
+}
+
+resource "aws_s3_bucket_replication_configuration" "replication" {
+  bucket = aws_s3_bucket.dr_bucket.id
+  role   = aws_iam_role.s3_replication_role.arn
+
+  rules {
+    id     = "ReplicateAll"
+    status = "Enabled"
+    filter {}
+    destination {
+      bucket        = aws_s3_bucket.dr_bucket_secondary.arn
+      storage_class = "STANDARD"
+    }
+  }
+}
+
 ########################
 # 🔔 SNS Topic + Email Subscription
 ########################
@@ -339,7 +408,7 @@ resource "aws_sns_topic" "alerts" {
 resource "aws_sns_topic_subscription" "email_alert" {
   topic_arn = aws_sns_topic.alerts.arn
   protocol  = "email"
-  endpoint  = "vinay.venvin@gmail.com" # ⛳ Replace this with your real email
+  endpoint  = "vinay.venvin@gmail.com"
 }
 
 ########################
@@ -353,3 +422,4 @@ output "private_subnets"      { value = [for s in aws_subnet.private : s.id] }
 output "alb_role_arn"         { value = aws_iam_role.alb_sa_role.arn }
 output "sns_topic_arn"        { value = aws_sns_topic.alerts.arn }
 output "dr_bucket_name"       { value = aws_s3_bucket.dr_bucket.id }
+output "dr_bucket_secondary"  { value = aws_s3_bucket.dr_bucket_secondary.id }
