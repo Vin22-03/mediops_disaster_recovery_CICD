@@ -14,7 +14,7 @@ pipeline {
                     sh """
                     cd $TF_DIR
                     # Reconfigure backend to use S3 instead of local tfstate
-                    terraform init -migrate-state
+                    terraform init -input=false
                     terraform validate
                     terraform plan -input=false -out=tfplan
                     """
