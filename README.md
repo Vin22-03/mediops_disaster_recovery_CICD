@@ -111,23 +111,46 @@ The MediOps project follows a modern **GitOps-inspired CI/CD workflow** with sec
 
 ---
 
-## 🌍 Disaster Recovery  
+## 🌍 Disaster Recovery (DR) – Built for Resilience  
 
-- Primary S3 bucket (us-east-1) with **versioning enabled**  
-- Cross-region replication to secondary S3 bucket (us-east-2)  
-- Validated by uploading test files → replicated successfully  
+In healthcare, downtime or data loss can cost lives. That’s why **MediOps was designed with Disaster Recovery as a first-class citizen**, not an afterthought.  
+
+- 🪣 **Primary S3 Bucket (us-east-1)**  
+  - Stores application artifacts, backups, and critical static files.  
+  - Versioning enabled → ensures that **every change is preserved** (no accidental overwrites/loss).  
+
+- 🔄 **Cross-Region Replication to Secondary Bucket (us-east-2)**  
+  - Configured replication so that **every object/version in the primary bucket is automatically mirrored** in another AWS region.  
+  - This ensures business continuity even if **an entire AWS region goes down**.  
+
+- ✅ **Validation Performed**  
+  - Uploaded test files into the primary bucket → confirmed replication in the secondary bucket.  
+  - Demonstrated screenshots of replication success in GitHub repo.  
+
+- ⚡ **Recruiter Takeaway**  
+  - This DR setup shows that I can **design for high availability & regional failure recovery**, a critical skill for cloud/DevOps engineers.  
+  - Goes beyond just deploying apps → focuses on **resilience, compliance, and reliability**.  
+
+> *“Infrastructure is not complete until it’s disaster-proof.” – This DR implementation proves MediOps can survive outages without data loss.*
+  
 
 ---
 
-## 🐞 Issues Faced & Solutions  
+## 🐞 Issues Faced & Fixes  
 
 | Issue | Root Cause | Solution |
 |-------|------------|----------|
-| **Prometheus pods stuck in Pending** | PVC/StorageClass misconfigured | Created `gp2-csi` storage class, redeployed |
-| **S3 Replication failed** | Versioning not enabled on destination bucket | Enabled versioning on both buckets + added IAM role/policy |
-| **AccessDenied on S3 static site** | Missing bucket policy | Added public bucket policy for `GetObject` |
-| **Frontend not connecting to backend** | Wrong localhost resolution inside WSL | Used WSL IP in `.env` for Axios requests |
-| **SonarQube Jenkins error** | Wrong installation ID | Corrected Jenkins plugin config + creds |
+| Prometheus pods stuck in `Pending` | PVC/StorageClass misconfigured | Created `gp2-csi` StorageClass, redeployed Prometheus |
+| S3 replication failed | Versioning not enabled on destination bucket | Enabled versioning on both buckets, fixed IAM policy |
+| `403 AccessDenied` on static site | Missing public bucket policy | Added `s3:GetObject` bucket policy |
+| Frontend not connecting to backend | WSL localhost mismatch | Used WSL IP in `.env` for Axios requests |
+| SonarQube Jenkins failure | Wrong installation ID | Corrected Jenkins plugin config & credentials |
+| **Env Vars Conflict** | Used both `value` and `valueFrom` in K8s env → invalid | Kept only `valueFrom` for secrets, removed duplicate |
+| **CrashLoopBackOff (connection refused)** | Flask app crashed on `db.create_all()` since DB wasn’t reachable | Wrapped DB init in try/except, added `/health` with DB query |
+| **Pods not reading env vars** | Tested with `docker run` (no env vars passed) instead of K8s pod | Verified env inside running pod → values injected correctly |
+| **RDS Security Group mismatch** | RDS SG allowed wrong group (sg-0e93f5…) | Updated Terraform to reference `eks_sg.id` for worker nodes |
+| **Database missing** | RDS didn’t have `mediopsdb` | Logged into RDS with `psql` and manually created `mediopsdb` |
+| **Health probe failures (500)** | DB not initialized properly | Fixed after DB creation + correct SG → probe returned `200` |
 
 
 ---
@@ -160,7 +183,8 @@ The MediOps project follows a modern **GitOps-inspired CI/CD workflow** with sec
 # - SNS Email Confirm: ![SNS Email Confirm](https://github.com/Vin22-03/mediops_disaster_recovery_CICD/blob/main/Screenshots/SNS_EMail_confirm.png)
 # - Rollback Alert: ![Rollback Alert](https://github.com/Vin22-03/mediops_disaster_recovery_CICD/blob/main/Screenshots/SNS_Email.jpg?raw=true)
 # - Static Hosting_S3: ![Static Hosting_S3](https://github.com/Vin22-03/mediops_disaster_recovery_CICD/blob/main/Screenshots/Static_S3.png)
-# - : ![]()
+# - Automated Snapsht Backup: ![Automated Snapsht Backup](https://github.com/Vin22-03/mediops_disaster_recovery_CICD/blob/main/Screenshots/Automated_snapshot_backup.png)
+# - Grafana: ![Grafana](https://github.com/Vin22-03/mediops_disaster_recovery_CICD/blob/main/Screenshots/grafana1.png)
 
 ---
 
@@ -168,7 +192,8 @@ The MediOps project follows a modern **GitOps-inspired CI/CD workflow** with sec
 
 👨‍💻 **Vinay Bhajantri (VinCloudOps)**  
 - 🚀 Aspiring **Cloud & DevOps Engineer**  
-- 🔗 [LinkedIn](https://www.linkedin.com/in/vinayvbhajantri) | [GitHub](https://github.com/Vin22-03)  
+- 🔗 [LinkedIn](https://www.linkedin.com/in/vinayvbhajantri) | [GitHub](https://github.com/Vin22-03)
+- 🔗 [VincloudOps](https://www.vincloudops.tech)
 
 ---
 
